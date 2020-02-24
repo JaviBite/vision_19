@@ -176,7 +176,7 @@ void alterarContraste(Mat& matriz, double contrast)
 void generarDistorsion(Mat& matriz)
 {
 	Mat in = matriz.clone();
-	float k1 = -1.0e-5;
+	float k1 = 0.0;
 	float k2 = 0.0;
 	float p1 = 0.0;
 	float p2 = 0.0;
@@ -189,8 +189,8 @@ void generarDistorsion(Mat& matriz)
 	Mat cam = Mat(3,3,CV_32FC1);
 	cam.at<float>(0,2) = matriz.cols/2;
 	cam.at<float>(1,2) = matriz.rows/2;
-	cam.at<float>(0,0) = 1.0;
-	cam.at<float>(1,1) = 1.0;
+	cam.at<float>(0,0) = 100.0;
+	cam.at<float>(1,1) = 100.0;
 	cam.at<float>(2,2) = 1;
 
 	undistort(in,matriz,cam,distCoeffs);
