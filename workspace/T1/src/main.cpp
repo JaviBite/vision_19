@@ -51,7 +51,7 @@ int main(int, char**)
 
         //apply filter
         //Mat I = apply_effect_rgb(frame, alien_blue, 50);
-        Mat I = apply_effect(frame, take_on_me, 9);
+        Mat I = apply_effect(frame, take_on_me, 10);
 
         // show live and wait for a key with timeout long enough to show images
         imshow("CAMERA 1", I);  // Window name

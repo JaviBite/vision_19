@@ -37,7 +37,7 @@ bool is_skin(float threshold, uchar r, uchar g, uchar b) {
 
 // Effects
 
-uchar negative(uchar& c, int aux[]) {
+uchar negative(uchar& c, uchar* end, int aux[]) {
 	return 255 - c;
 }
 
@@ -58,15 +58,15 @@ void alien_blue(uchar& b, uchar& g, uchar& r, float threshold){
    }
 }
 
-uchar take_on_me(uchar &a, int aux[]){
+uchar take_on_me(uchar &a, uchar* end, int aux[]){
 	int nCols = aux[1];
 	int nChannels = aux[2];
 	int threshold = aux[3];
 	uchar* main = &a;
 	uchar* next = &a + 3;
 	uchar* down = &a + (nChannels * nCols);
-	if ( (next != nullptr && abs((int)*main - (int)*next) < threshold) ||
-		 (down != nullptr && abs((int)*main - (int)*down) < threshold)    ) {
+	if ( (next < end && abs((int)*main - (int)*next) < threshold) ||
+		 (down < end && abs((int)*main - (int)*down) < threshold)    ) {
 			 return 255;
 		 }
 		 else return 1;
@@ -76,11 +76,12 @@ uchar take_on_me(uchar &a, int aux[]){
 
 // Functions
 
-Mat apply_effect(Mat I, function<uchar (uchar&, int[])> effect, float threshold) {
+Mat apply_effect(Mat I, function<uchar (uchar&, uchar*, int[])> effect, float threshold) {
 	int nRows = I.rows;
 	int nChannels = I.channels();
 	int nCols = I.cols * nChannels;
 	int info[4] = {nRows, nCols, nChannels, threshold};
+	uchar* end = I.ptr(I.size);
 	uchar* p;
 	if (I.isContinuous()){
 		nCols *= nRows;
@@ -91,7 +92,7 @@ Mat apply_effect(Mat I, function<uchar (uchar&, int[])> effect, float threshold)
 			p = I.ptr<uchar>(i);
 			for ( int j = 0; j < nCols; ++j)
 			{
-				p[j] = effect(p[j], info);
+				p[j] = effect(p[j], end, info);
 			}
 		}
 	return I;
