@@ -125,7 +125,7 @@ Vec3b generarAlienPixel(Vec3b color){
 	int saturation = color[1];
 	int value = color[2];
 
-	if( hue > 10 && hue < 25 && saturation > 48 && saturation < 255 && value > 80 ) {
+	if( hue > 0 && hue < 20 && saturation > 48 && value > 80 ) {
 		color[0] = 55;
 		color[1] = 255;
 		color[2] = 255;
@@ -145,7 +145,8 @@ void generarAlien(Mat& matriz)
 }
 
 uchar reducirColorF(uchar &a, uchar* end, double aux[]){
-	if(a < 128) return 0;
+	if(a < 80) return 0;
+	if(a < 150) return 80;
 	return 255;
 }
 
@@ -160,7 +161,8 @@ uchar contrastF(uchar &a, uchar* end, double aux[]){
 void generarDistorsion(Mat& matriz)
 {
 	Mat in = matriz.clone();
-	float k1 = 0.0;
+	float k1 = -0.5; // para cojín
+	//float k1 = 1;  // para barril
 	float k2 = 0.0;
 	float p1 = 0.0;
 	float p2 = 0.0;
@@ -173,8 +175,8 @@ void generarDistorsion(Mat& matriz)
 	Mat cam = Mat(3,3,CV_32FC1);
 	cam.at<float>(0,2) = matriz.cols/2;
 	cam.at<float>(1,2) = matriz.rows/2;
-	cam.at<float>(0,0) = 100.0;
-	cam.at<float>(1,1) = 100.0;
+	cam.at<float>(0,0) = matriz.cols;
+	cam.at<float>(1,1) = matriz.rows;
 	cam.at<float>(2,2) = 1;
 
 	undistort(in,matriz,cam,distCoeffs);

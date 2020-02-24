@@ -53,7 +53,6 @@ int main(int, char**)
             break;
         }
 
-
         Sleep(5); // Sleep is mandatory - for no leg!
 
         //apply filter
