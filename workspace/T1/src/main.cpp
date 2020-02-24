@@ -19,10 +19,11 @@ int main(int, char**)
 	// VARIABLES
 	double contrast = 3.5;
 	int numeroColores = 64;
-	bool contraste = true;
+	bool contraste = false;
 	bool reduccionColores = false;
 	bool efectoAlien = false;
 	bool distorsion = false;
+	bool take_effect = false;
 
     Mat frame;
     //--- INITIALIZE VIDEOCAPTURE
@@ -60,8 +61,8 @@ int main(int, char**)
         //Mat I = apply_effect(frame, take_on_me, 10);
 
         //EFECTOS
-		if (contraste) alterarContraste(frame,contrast);
-		if (reduccionColores) reducirColores(frame,numeroColores);
+		if (contraste) frame = apply_effect(frame, contrastF, contrast);
+		if (reduccionColores) frame = apply_effect(frame, reducirColorF, numeroColores);
 		if (efectoAlien) {
 			Mat hsv;
 			cvtColor(frame,hsv,COLOR_BGR2HSV);
@@ -69,6 +70,7 @@ int main(int, char**)
 			cvtColor(hsv,frame,COLOR_HSV2BGR);
 		}
 		if (distorsion) generarDistorsion(frame);
+		if (take_effect) frame = apply_effect(frame, take_on_me, 10);
 
         // show live and wait for a key with timeout long enough to show images
         imshow("CAMERA 1", frame);  // Window name
@@ -89,11 +91,15 @@ int main(int, char**)
         case '4':
         	distorsion = !distorsion;
             break;
+        case '5':
+        	take_effect = !take_effect;
+        	break;
         case '0':
             contraste = false;
             reduccionColores = false;
             efectoAlien = false;
             distorsion = false;
+            take_effect = false;
         }
 
         if (tipka == 'q') {
