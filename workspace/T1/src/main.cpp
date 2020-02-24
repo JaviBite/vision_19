@@ -17,13 +17,14 @@ int  c = 1; // For filename
 int main(int, char**)
 {
 	// VARIABLES
-	double contrast = 3.5;
+	double contrast = 2;
 	int numeroColores = 64;
 	bool contraste = false;
 	bool reduccionColores = false;
 	bool efectoAlien = false;
 	bool distorsion = false;
 	bool take_effect = false;
+	bool hist_eq = false;
 
     Mat frame;
     //--- INITIALIZE VIDEOCAPTURE
@@ -62,12 +63,21 @@ int main(int, char**)
         //EFECTOS
 		if (contraste) frame = apply_effect(frame, contrastF, contrast);
 		if (reduccionColores) frame = apply_effect(frame, reducirColorF, numeroColores);
-//		if (efectoAlien) {
-//			Mat hsv;
-//			cvtColor(frame,hsv,COLOR_BGR2HSV);
-//			generarAlien(hsv);
-//			cvtColor(hsv,frame,COLOR_HSV2BGR);
-//		}
+		if (hist_eq) {
+			Mat ycrcb;
+
+			cvtColor(frame,ycrcb,CV_BGR2YCrCb);
+
+			vector<Mat> channels;
+			split(ycrcb,channels);
+
+			equalizeHist(channels[0], channels[0]);
+
+			Mat result;
+			merge(channels,ycrcb);
+
+			cvtColor(ycrcb,frame,CV_YCrCb2BGR);
+		}
 		if (efectoAlien) {
 					Mat skin = skinMat(frame);
 					//frame = skin;
@@ -99,6 +109,9 @@ int main(int, char**)
         case '5':
         	take_effect = !take_effect;
         	break;
+        case '6':
+				hist_eq = !hist_eq;
+				break;
         case '0':
             contraste = false;
             reduccionColores = false;
@@ -128,6 +141,48 @@ int main(int, char**)
             break;
         }
 
+        //Historiogram
+
+        Mat channels[3];
+        split(frame,channels);
+        int histSize = 256; //from 0 to 255
+        float range[] = { 0, 256 } ; //the upper boundary is exclusive
+        const float* histRange = { range };
+        bool uniform = true; bool accumulate = false;
+        Mat b_hist, g_hist, r_hist;
+
+        /// Compute the histograms:
+        calcHist( &channels[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate );
+        calcHist( &channels[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate );
+        calcHist( &channels[2], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate );
+
+        // Draw the histograms for R, G and B
+        int hist_w = 512; int hist_h = 400;
+        int bin_w = cvRound( (double) hist_w/histSize );
+
+        Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+
+        /// Normalize the result to [ 0, histImage.rows ]
+        normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+        normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+        normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+
+        /// Draw for each channel
+        for( int i = 1; i < histSize; i++ )
+        {
+            line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
+                             Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
+                             Scalar( 255, 0, 0), 2, 8, 0  );
+            line( histImage, Point( bin_w*(i-1), hist_h - cvRound(g_hist.at<float>(i-1)) ) ,
+                             Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
+                             Scalar( 0, 255, 0), 2, 8, 0  );
+            line( histImage, Point( bin_w*(i-1), hist_h - cvRound(r_hist.at<float>(i-1)) ) ,
+                             Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
+                             Scalar( 0, 0, 255), 2, 8, 0  );
+        }
+
+        namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
+        imshow("calcHist Demo", histImage );
 
     }
     // the camera will be deinitialized automatically in VideoCapture destructor
