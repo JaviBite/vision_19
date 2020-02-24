@@ -34,6 +34,7 @@ void isSkin (uchar& hue, uchar& saturation, uchar& value, float aux) {
 	//			//skin_cmp(brown, skin) < threshold ||
 	//			false) return true;
 	//	else return false;
+	//if( hue > 0 && hue < 20 && saturation > 48 && value > 80 ) {
 	 if (hue > 10 && hue < 25 && saturation > 48 && saturation < 255 && value > 80 ) {
 		 hue = 155; saturation = 155; value = 155;
 	 }
@@ -122,20 +123,6 @@ Mat apply_effect_rgb(Mat I, function<void (uchar&, uchar&, uchar&, float)> effec
 	return I;
 }
 
-
-Vec3b generarAlienPixel(Vec3b color){
-	uchar hue = color[0];
-	uchar saturation = color[1];
-	uchar value = color[2];
-
-//	if( isSkin(hue, saturation, value, 0) ) {
-//		color[0] = 55;
-//		color[1] = 255;
-//		color[2] = 255;
-//	}
-	return color;
-}
-
 Mat skinMat(const Mat& img){
 	Mat channels[3];
 	Mat ret;
@@ -168,19 +155,10 @@ Mat generarAlien(Mat& skin, Mat& I) {
 	return I;
 }
 
-void generarAlien(Mat& matriz)
-{
-	for (int i = 0; i < matriz.rows; i++)
-	{
-		for (int j = 0; j < matriz.cols; j++)
-		{
-			matriz.at<Vec3b>(i,j) = generarAlienPixel(matriz.at<Vec3b>(i,j));
-		}
-	}
-}
 
 uchar reducirColorF(uchar &a, uchar* end, double aux[]){
-	if(a < 128) return 0;
+	if(a < 80) return 0;
+	if(a < 150) return 80;
 	return 255;
 }
 
@@ -192,10 +170,10 @@ uchar contrastF(uchar &a, uchar* end, double aux[]){
 	return ret;
 }
 
-void generarDistorsion(Mat& matriz)
-{
+void generarDistorsion(Mat& matriz) {
 	Mat in = matriz.clone();
-	float k1 = 0.3;
+	float k1 = -0.5; // para cojín
+	//float k1 = 1;  // para barril
 	float k2 = 0.0;
 	float p1 = 0.0;
 	float p2 = 0.0;
@@ -208,8 +186,8 @@ void generarDistorsion(Mat& matriz)
 	Mat cam = Mat(3,3,CV_32FC1);
 	cam.at<float>(0,2) = matriz.cols/2;
 	cam.at<float>(1,2) = matriz.rows/2;
-	cam.at<float>(0,0) = 1.0;
-	cam.at<float>(1,1) = 1.0;
+	cam.at<float>(0,0) = matriz.cols;
+	cam.at<float>(1,1) = matriz.rows;
 	cam.at<float>(2,2) = 1;
 
 	undistort(in,matriz,cam,distCoeffs);
