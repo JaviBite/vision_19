@@ -37,7 +37,7 @@ bool is_skin(float threshold, uchar r, uchar g, uchar b) {
 
 // Effects
 
-uchar negative(uchar& c, uchar* end, int aux[]) {
+uchar negative(uchar& c, uchar* end, double aux[]) {
 	return 255 - c;
 }
 
@@ -47,7 +47,7 @@ uchar negative(uchar& c, uchar* end, int aux[]) {
 //   b = 255 - b;
 //}
 
-void alien_blue(uchar& b, uchar& g, uchar& r, float threshold){
+void alien_blue(uchar& b, uchar& g, uchar& r, double threshold){
    if (is_skin(threshold,r,g,b)) {
 	   r = r * ( 1 - 0.7);
 	   g = g * ( 1 - 0.7);
@@ -58,7 +58,7 @@ void alien_blue(uchar& b, uchar& g, uchar& r, float threshold){
    }
 }
 
-uchar take_on_me(uchar &a, uchar* end, int aux[]){
+uchar take_on_me(uchar &a, uchar* end, double aux[]){
 	int nCols = aux[1];
 	int nChannels = aux[2];
 	int threshold = aux[3];
@@ -76,11 +76,11 @@ uchar take_on_me(uchar &a, uchar* end, int aux[]){
 
 // Functions
 
-Mat apply_effect(Mat I, function<uchar (uchar&, uchar*, int[])> effect, float threshold) {
-	int nRows = I.rows;
-	int nChannels = I.channels();
-	int nCols = I.cols * nChannels;
-	int info[4] = {nRows, nCols, nChannels, threshold};
+Mat apply_effect(Mat I, function<uchar (uchar&, uchar*, double[])> effect, double threshold) {
+	double nRows = I.rows;
+	double nChannels = I.channels();
+	double nCols = I.cols * nChannels;
+	double info[4] = {nRows, nCols, nChannels, threshold};
 	uchar* end = I.ptr(I.size);
 	uchar* p;
 	if (I.isContinuous()){
@@ -125,7 +125,7 @@ Vec3b generarAlienPixel(Vec3b color){
 	int saturation = color[1];
 	int value = color[2];
 
-	if( hue < 20 && saturation > 48 && value > 80 ) {
+	if( hue > 10 && hue < 25 && saturation > 48 && saturation < 255 && value > 80 ) {
 		color[0] = 55;
 		color[1] = 255;
 		color[2] = 255;
@@ -144,33 +144,17 @@ void generarAlien(Mat& matriz)
 	}
 }
 
-int reducirColor(int color, int division){
-	if(color < 128) return 0;
+uchar reducirColorF(uchar &a, uchar* end, double aux[]){
+	if(a < 128) return 0;
 	return 255;
 }
 
-void reducirColores(Mat& matriz, int div)
-{
-    for (int i = 0; i < matriz.rows; i++)
-    {
-        for (int j = 0; j < matriz.cols; j++)
-        {
-            for (int k = 0; k < matriz.channels(); k++){
-            	matriz.at<Vec3b>(i,j)[k] = reducirColor(matriz.at<Vec3b>(i,j)[k],div);
-            }
-        }
-    }
-}
-
-void alterarContraste(Mat& matriz, double contrast)
-{
-	for (int i = 0; i < matriz.rows; i++)
-	{
-	  for (int j = 0; j < matriz.cols; j++)
-	  {
-		  matriz.at<Vec3b>(i,j) = matriz.at<Vec3b>(i,j) * contrast;
-	  }
-	}
+uchar contrastF(uchar &a, uchar* end, double aux[]){
+	double contrast = aux[3];
+	int ret = a * contrast;
+	if (ret > 255) ret = 255;
+	if (ret < 0) ret = 0;
+	return ret;
 }
 
 void generarDistorsion(Mat& matriz)
