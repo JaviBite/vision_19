@@ -118,3 +118,80 @@ Mat apply_effect_rgb(Mat I, function<void (uchar&, uchar&, uchar&, float)> effec
 		}
 	return I;
 }
+
+
+Vec3b generarAlienPixel(Vec3b color){
+	int hue = color[0];
+	int saturation = color[1];
+	int value = color[2];
+
+	if( hue < 20 && saturation > 48 && value > 80 ) {
+		color[0] = 55;
+		color[1] = 255;
+		color[2] = 255;
+	}
+	return color;
+}
+
+void generarAlien(Mat& matriz)
+{
+	for (int i = 0; i < matriz.rows; i++)
+	{
+		for (int j = 0; j < matriz.cols; j++)
+		{
+			matriz.at<Vec3b>(i,j) = generarAlienPixel(matriz.at<Vec3b>(i,j));
+		}
+	}
+}
+
+int reducirColor(int color, int division){
+	if(color < 128) return 0;
+	return 255;
+}
+
+void reducirColores(Mat& matriz, int div)
+{
+    for (int i = 0; i < matriz.rows; i++)
+    {
+        for (int j = 0; j < matriz.cols; j++)
+        {
+            for (int k = 0; k < matriz.channels(); k++){
+            	matriz.at<Vec3b>(i,j)[k] = reducirColor(matriz.at<Vec3b>(i,j)[k],div);
+            }
+        }
+    }
+}
+
+void alterarContraste(Mat& matriz, double contrast)
+{
+	for (int i = 0; i < matriz.rows; i++)
+	{
+	  for (int j = 0; j < matriz.cols; j++)
+	  {
+		  matriz.at<Vec3b>(i,j) = matriz.at<Vec3b>(i,j) * contrast;
+	  }
+	}
+}
+
+void generarDistorsion(Mat& matriz)
+{
+	Mat in = matriz.clone();
+	float k1 = -1.0e-5;
+	float k2 = 0.0;
+	float p1 = 0.0;
+	float p2 = 0.0;
+	Mat distCoeffs = Mat(4,1,CV_32FC1);
+	distCoeffs.at<float>(0,0) = k1;
+	distCoeffs.at<float>(1,0) = k2;
+	distCoeffs.at<float>(2,0) = p1;
+	distCoeffs.at<float>(3,0) = p2;
+
+	Mat cam = Mat(3,3,CV_32FC1);
+	cam.at<float>(0,2) = matriz.cols/2;
+	cam.at<float>(1,2) = matriz.rows/2;
+	cam.at<float>(0,0) = 1.0;
+	cam.at<float>(1,1) = 1.0;
+	cam.at<float>(2,2) = 1;
+
+	undistort(in,matriz,cam,distCoeffs);
+}
