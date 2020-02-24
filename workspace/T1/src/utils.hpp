@@ -23,16 +23,23 @@ int skin_cmp(const uchar skin_tone[3], uchar compare[3]) {
 			+ abs((int)skin_tone[2] - (int)compare[2]);
 }
 
-bool is_skin(float threshold, uchar r, uchar g, uchar b) {
-	uchar skin[3] = {r, g, b};
-	if ( skin_cmp(average, skin) < threshold ||
-			skin_cmp(pale, skin) < threshold ||
-			skin_cmp(pale_tan, skin) < threshold ||
-			skin_cmp(tanned, skin) < threshold ||
-			//skin_cmp(black, skin) < threshold ||
-			//skin_cmp(brown, skin) < threshold ||
-			false) return true;
-	else return false;
+//bool is_skin(float threshold, uchar r, uchar g, uchar b) {
+void isSkin (uchar& hue, uchar& saturation, uchar& value, float aux) {
+	//	uchar skin[3] = {r, g, b};
+	//	if ( skin_cmp(average, skin) < threshold ||
+	//			skin_cmp(pale, skin) < threshold ||
+	//			skin_cmp(pale_tan, skin) < threshold ||
+	//			skin_cmp(tanned, skin) < threshold ||
+	//			//skin_cmp(black, skin) < threshold ||
+	//			//skin_cmp(brown, skin) < threshold ||
+	//			false) return true;
+	//	else return false;
+	 if (hue > 10 && hue < 25 && saturation > 48 && saturation < 255 && value > 80 ) {
+		 hue = 155; saturation = 155; value = 155;
+	 }
+	 else {
+		 hue = 0; saturation = 0; value = 0;
+	 }
 }
 
 // Effects
@@ -47,15 +54,11 @@ uchar negative(uchar& c, uchar* end, double aux[]) {
 //   b = 255 - b;
 //}
 
-void alien_blue(uchar& b, uchar& g, uchar& r, double threshold){
-   if (is_skin(threshold,r,g,b)) {
-	   r = r * ( 1 - 0.7);
-	   g = g * ( 1 - 0.7);
-	   b = b * ( 1 + 1.5);
-	   if (r < 35) r = 35;
-	   if (g < 35) g = 35;
-	   if (b > 150) b = 150;
-   }
+void alienBlue(uchar& b, uchar& g, uchar& r){
+	   r = saturate_cast< uchar >(r * ( 1 - 0.5));
+	   g = saturate_cast< uchar >(g * ( 1 - 0.5));
+	   b = saturate_cast< uchar >(b * ( 1 + 0.5));
+
 }
 
 uchar take_on_me(uchar &a, uchar* end, double aux[]){
@@ -121,16 +124,48 @@ Mat apply_effect_rgb(Mat I, function<void (uchar&, uchar&, uchar&, float)> effec
 
 
 Vec3b generarAlienPixel(Vec3b color){
-	int hue = color[0];
-	int saturation = color[1];
-	int value = color[2];
+	uchar hue = color[0];
+	uchar saturation = color[1];
+	uchar value = color[2];
 
-	if( hue > 10 && hue < 25 && saturation > 48 && saturation < 255 && value > 80 ) {
-		color[0] = 55;
-		color[1] = 255;
-		color[2] = 255;
-	}
+//	if( isSkin(hue, saturation, value, 0) ) {
+//		color[0] = 55;
+//		color[1] = 255;
+//		color[2] = 255;
+//	}
 	return color;
+}
+
+Mat skinMat(const Mat& img){
+	Mat channels[3];
+	Mat ret;
+	cvtColor(img,ret,COLOR_BGR2HSV);
+	split(apply_effect_rgb(ret,isSkin,0),channels);
+
+	return channels[1];
+}
+
+Mat generarAlien(Mat& skin, Mat& I) {
+	int nRows = I.rows;
+	int nChannels = I.channels();
+	int nCols = I.cols * nChannels;
+	uchar* p;
+	uchar* s;
+	int j2;
+	if (I.isContinuous()){
+		nCols *= nRows;
+		nRows = 1;
+	}
+	for( int i = 0; i < nRows; ++i)	{
+			p = I.ptr<uchar>(i);
+			s = skin.ptr<uchar>(i);
+			j2 = 0;
+			for ( int j = 0; j < nCols; j = j + nChannels) {
+				if(s[j2] > 0) alienBlue(p[j], p[j+1], p[j+2]);
+				j2++;
+			}
+		}
+	return I;
 }
 
 void generarAlien(Mat& matriz)
@@ -160,7 +195,7 @@ uchar contrastF(uchar &a, uchar* end, double aux[]){
 void generarDistorsion(Mat& matriz)
 {
 	Mat in = matriz.clone();
-	float k1 = -1.0e-5;
+	float k1 = 0.3;
 	float k2 = 0.0;
 	float p1 = 0.0;
 	float p2 = 0.0;

@@ -63,12 +63,18 @@ int main(int, char**)
         //EFECTOS
 		if (contraste) frame = apply_effect(frame, contrastF, contrast);
 		if (reduccionColores) frame = apply_effect(frame, reducirColorF, numeroColores);
+//		if (efectoAlien) {
+//			Mat hsv;
+//			cvtColor(frame,hsv,COLOR_BGR2HSV);
+//			generarAlien(hsv);
+//			cvtColor(hsv,frame,COLOR_HSV2BGR);
+//		}
 		if (efectoAlien) {
-			Mat hsv;
-			cvtColor(frame,hsv,COLOR_BGR2HSV);
-			generarAlien(hsv);
-			cvtColor(hsv,frame,COLOR_HSV2BGR);
-		}
+					Mat skin = skinMat(frame);
+					//frame = skin;
+					frame = generarAlien(skin,frame);
+
+				}
 		if (distorsion) generarDistorsion(frame);
 		if (take_effect) frame = apply_effect(frame, take_on_me, 10);
 
