@@ -178,6 +178,75 @@ uchar contrastF(uchar &a, uchar* end, double aux[]){
 	return ret;
 }
 
+Mat equalizarCV(Mat in) {
+	Mat ycrcb;
+
+	cvtColor(in,ycrcb,CV_BGR2YCrCb);
+
+	vector<Mat> channels;
+	split(ycrcb,channels);
+
+	equalizeHist(channels[0], channels[0]);
+
+	Mat result;
+	merge(channels,ycrcb);
+
+	cvtColor(ycrcb,result,CV_YCrCb2BGR);
+
+	return result;
+}
+
+int countPixels(const cv::Mat &image, cv::Scalar color) {
+
+    Mat binary_image;
+    cv::inRange(image, color, color, binary_image);
+        return cv::countNonZero(binary_image);
+}
+
+Mat equalizarOurs(Mat& in) {
+	Mat result;
+
+	Mat hcv;
+	vector<Mat> channels;
+	cvtColor(in,hcv,CV_BGR2YCrCb);
+	split(hcv,channels);
+
+	float px[256];
+	for (int i = 0; i < 256; ++i)
+		px[i] = countPixels(channels[0],(Scalar)i) / (float)(in.rows * in.cols);
+
+//	for (int i = 0;i < 256 ; i++) cout << "valuee " << px[i] << endl;
+//	cv::waitKey();
+
+	float cdf[256];
+	cdf[0] = px[0];
+	float max = 0;
+	for (int i = 1; i < 256; ++i) {
+		 cdf[i] = ( cdf[i-1] + px[i] );
+		 if (cdf[i] > max ) max = cdf[i];
+	}
+
+	Mat lookUpTable(1, 256, CV_8U);
+	uchar* p = lookUpTable.ptr();
+	for (int i = 0; i < 256; ++i)
+		p[i] = round(((cdf[i] - 1 ) / max) * 255);
+
+//	for (int i = 0;i < 256 ; i++) cout << "valueel " << (int)p[i] << endl;
+//  cv::waitKey();
+
+	LUT(channels[0], lookUpTable,  channels[0]);
+	//channels[2] = out;
+
+//	uchar* pp = channels[0].ptr();
+//	for (int i = 0;i < 256 ; i++) cout << "value " << (int)pp[i] << endl;
+//	cv::waitKey();
+
+	merge(channels,hcv);
+
+	cvtColor(hcv,result, CV_YCrCb2BGR);
+	return result;
+}
+
 void generarDistorsion(Mat& matriz) {
 	Mat in = matriz.clone();
 	float k1 = -0.5; // para cojín

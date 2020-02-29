@@ -25,6 +25,11 @@ int main(int, char**)
 	bool distorsion = false;
 	bool take_effect = false;
 	bool hist_eq = false;
+	bool hist_eq_ours = false;
+
+	bool uniform = true;
+	bool accumulate = false;
+	bool accumulate_hist = false;
 
     Mat frame;
     //--- INITIALIZE VIDEOCAPTURE
@@ -63,21 +68,8 @@ int main(int, char**)
         //EFECTOS
 		if (contraste) frame = apply_effect(frame, contrastF, contrast);
 		if (reduccionColores) frame = apply_effect(frame, reducirColorF, numeroColores);
-		if (hist_eq) {
-			Mat ycrcb;
-
-			cvtColor(frame,ycrcb,CV_BGR2YCrCb);
-
-			vector<Mat> channels;
-			split(ycrcb,channels);
-
-			equalizeHist(channels[0], channels[0]);
-
-			Mat result;
-			merge(channels,ycrcb);
-
-			cvtColor(ycrcb,frame,CV_YCrCb2BGR);
-		}
+		if (hist_eq) frame = equalizarCV(frame);
+		if (hist_eq_ours) frame = equalizarOurs(frame);
 		if (efectoAlien) {
 					Mat skin = skinMat(frame);
 					//frame = skin;
@@ -112,6 +104,9 @@ int main(int, char**)
         case '6':
 				hist_eq = !hist_eq;
 				break;
+        case '7':
+				hist_eq_ours = !hist_eq_ours;
+				break;
         case '0':
             contraste = false;
             reduccionColores = false;
@@ -120,7 +115,7 @@ int main(int, char**)
             take_effect = false;
         }
 
-        if (tipka == 'q') {
+        if (tipka == 's') {
 
             sprintf(filename, "C://Frame_%d.jpg", c); // select your folder - filename is "Frame_n"
             ofstream f_out("C://Frame.jpg");
@@ -134,12 +129,15 @@ int main(int, char**)
             c++;
         }
 
-
-        if (tipka == 'a') {
+        if (tipka == 'q') {
             cout << "Terminating..." << endl;
             Sleep(2000);
             break;
         }
+
+        if (tipka == 'a') {
+        	accumulate_hist = !accumulate_hist;
+		}
 
         //Historiogram
 
@@ -148,7 +146,7 @@ int main(int, char**)
         int histSize = 256; //from 0 to 255
         float range[] = { 0, 256 } ; //the upper boundary is exclusive
         const float* histRange = { range };
-        bool uniform = true; bool accumulate = false;
+
         Mat b_hist, g_hist, r_hist;
 
         /// Compute the histograms:
@@ -162,6 +160,15 @@ int main(int, char**)
 
         Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
 
+        if (accumulate_hist) {
+        	for( int i = 1; i < histSize; i++ )
+			{
+				b_hist.at<float>(i) = b_hist.at<float>(i-1) + b_hist.at<float>(i);
+				g_hist.at<float>(i) = g_hist.at<float>(i-1) + g_hist.at<float>(i);
+				r_hist.at<float>(i) = b_hist.at<float>(i-1) + r_hist.at<float>(i);
+			}
+		}
+
         /// Normalize the result to [ 0, histImage.rows ]
         normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
         normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
@@ -170,6 +177,7 @@ int main(int, char**)
         /// Draw for each channel
         for( int i = 1; i < histSize; i++ )
         {
+
             line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
                              Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
                              Scalar( 255, 0, 0), 2, 8, 0  );
