@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <functional>
 #include <cmath>
+#define CV_BGR2YCrCb COLOR_BGR2YCrCb
+#define CV_YCrCb2BGR COLOR_YCrCb2BGR
+
 
 using namespace cv;
 using namespace std;

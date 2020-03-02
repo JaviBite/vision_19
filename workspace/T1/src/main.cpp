@@ -4,6 +4,7 @@
 #include <windows.h> // For Sleep
 #include "utils.hpp"
 #include <fstream>
+#define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
 
 using namespace cv;
 using namespace std;
