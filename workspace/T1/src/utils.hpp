@@ -170,6 +170,7 @@ Mat generarAlien(Mat& skin, Mat& I) {
 
 uchar reducirColorF(uchar &a, uchar* end, double aux[]){
 	int num_colors = aux[3];
+	// this var holds by how much to divide the total number of colors -> the higher, the less colors
 	return saturate_cast< uchar >(a/num_colors*num_colors + num_colors/2);
 }
 
