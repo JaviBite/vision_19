@@ -4,6 +4,7 @@
 #include <windows.h> // For Sleep
 #include "utils.hpp"
 #include <fstream>
+#define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
 
 using namespace cv;
 using namespace std;
@@ -107,8 +108,8 @@ int main(int, char**)
         	take_effect = !take_effect;
         	break;
         case '6':
-				hist_eq = !hist_eq;
-				break;
+			hist_eq = !hist_eq;
+			break;
         case '7':
 				hist_eq_ours = !hist_eq_ours;
 				break;
@@ -132,12 +133,17 @@ int main(int, char**)
         case 'b':
 				take_mode = (take_mode + 10) % 100 + 10;
 				break;
+
+
+
         case '0':
             contraste = false;
             reduccionColores = false;
             efectoAlien = false;
             distorsion = false;
             take_effect = false;
+            hist_eq = false;
+			hist_eq_ours = false;
         }
 
         if (tipka == 's') {
