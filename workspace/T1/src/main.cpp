@@ -103,17 +103,19 @@ int main(int, char**)
         	take_effect = !take_effect;
         	break;
         case '6':
-				hist_eq = !hist_eq;
-				break;
+			hist_eq = !hist_eq;
+			break;
         case '7':
-				hist_eq_ours = !hist_eq_ours;
-				break;
+			hist_eq_ours = !hist_eq_ours;
+			break;
         case '0':
             contraste = false;
             reduccionColores = false;
             efectoAlien = false;
             distorsion = false;
             take_effect = false;
+            hist_eq = false;
+			hist_eq_ours = false;
         }
 
         if (tipka == 's') {
