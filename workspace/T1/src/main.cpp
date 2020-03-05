@@ -137,7 +137,7 @@ int main(int, char**)
         case 'v':
 				//numeroColores = (numeroColores + 1) % 64;
         		numeroColores = pow((cbrt(numeroColores) + 1),3);
-        		if (numeroColores > 216) numeroColores = 8;
+        		if (numeroColores > 1331) numeroColores = 8;
 				break;
         case 'b':
 				take_mode = (take_mode + 10) % 100 + 10;
