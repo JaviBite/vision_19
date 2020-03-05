@@ -4,6 +4,7 @@
 #include <windows.h> // For Sleep
 #include "utils.hpp"
 #include <fstream>
+#include <string>
 #define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
 
 using namespace cv;
@@ -19,7 +20,7 @@ int main(int, char**)
 {
 	// VARIABLES
 	double contrast = 1;
-	int numeroColores = 64;
+	int numeroColores = 8;
 	int alien_mode = 0;
 	int dist_mode = 0;
 	int take_mode = 10;
@@ -72,8 +73,14 @@ int main(int, char**)
         //Mat I = apply_effect(frame, take_on_me, 10);
 
         //EFECTOS
-		if (contraste) frame = apply_effect(frame, contrastF, contrast);
-		if (reduccionColores) frame = apply_effect(frame, reducirColorF, numeroColores);
+		if (contraste) {
+			frame = apply_effect(frame, contrastF, contrast);
+			putText(frame,to_string(contrast),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+		}
+		if (reduccionColores) {
+			frame = apply_effect(frame, reducirColorF, 256 / cbrt(numeroColores));
+			putText(frame,to_string(numeroColores),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+		}
 		if (hist_eq) frame = equalizarCV(frame);
 		if (hist_eq_ours) frame = equalizarOurs(frame);
 		if (efectoAlien) {
@@ -128,7 +135,9 @@ int main(int, char**)
 				if (contrast > 4) contrast = 1;
 				break;
         case 'v':
-				numeroColores = (numeroColores + 1) % 64;
+				//numeroColores = (numeroColores + 1) % 64;
+        		numeroColores = pow((cbrt(numeroColores) + 1),3);
+        		if (numeroColores > 216) numeroColores = 8;
 				break;
         case 'b':
 				take_mode = (take_mode + 10) % 100 + 10;
