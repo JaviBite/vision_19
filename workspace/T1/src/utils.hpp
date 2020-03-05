@@ -65,6 +65,20 @@ void alienBlue(uchar& b, uchar& g, uchar& r){
 
 }
 
+void alienRed(uchar& b, uchar& g, uchar& r){
+	   r = saturate_cast< uchar >(r * ( 1 + 0.5));
+	   g = saturate_cast< uchar >(g * ( 1 - 0.5));
+	   b = saturate_cast< uchar >(b * ( 1 - 0.5));
+
+}
+
+void alienGreen(uchar& b, uchar& g, uchar& r){
+	   r = saturate_cast< uchar >(r * ( 1 - 0.5));
+	   g = saturate_cast< uchar >(g * ( 1 + 0.5));
+	   b = saturate_cast< uchar >(b * ( 1 - 0.5));
+
+}
+
 uchar take_on_me(uchar &a, uchar* end, double aux[]){
 	int nCols = aux[1];
 	int nChannels = aux[2];
@@ -136,7 +150,8 @@ const uchar Cb_MAX = 127;		//127
 
 Mat skinMat(const Mat& img){
 	Mat channels[3];
-	Mat ret;
+	Mat ret, no_noise;
+	GaussianBlur(img, no_noise, Size2i(5,5), 5, 5, BORDER_DEFAULT);
 	cvtColor(img,ret,cv::COLOR_BGR2YCrCb);
 	inRange(ret,cv::Scalar(Y_MIN,Cr_MIN,Cb_MIN),cv::Scalar(Y_MAX,Cr_MAX,Cb_MAX),ret);
 	//split(apply_effect_rgb(ret,isSkin,0),channels);
@@ -144,7 +159,7 @@ Mat skinMat(const Mat& img){
 	return ret;
 }
 
-Mat generarAlien(Mat& skin, Mat& I) {
+Mat generarAlien(Mat& skin, Mat& I, int mode) {
 	int nRows = I.rows;
 	int nChannels = I.channels();
 	int nCols = I.cols * nChannels;
@@ -160,7 +175,20 @@ Mat generarAlien(Mat& skin, Mat& I) {
 			s = skin.ptr<uchar>(i);
 			j2 = 0;
 			for ( int j = 0; j < nCols; j = j + nChannels) {
-				if(s[j2] > 0) alienBlue(p[j], p[j+1], p[j+2]);
+				switch(mode){
+				case 0:
+					if(s[j2] > 0) alienRed(p[j], p[j+1], p[j+2]);
+					break;
+
+				case 1:
+					if(s[j2] > 0) alienGreen(p[j], p[j+1], p[j+2]);
+					break;
+
+				case 2:
+					if(s[j2] > 0) alienBlue(p[j], p[j+1], p[j+2]);
+					break;
+				}
+
 				j2++;
 			}
 		}
@@ -215,35 +243,34 @@ Mat equalizarOurs(Mat& in) {
 	cvtColor(in,hcv,CV_BGR2YCrCb);
 	split(hcv,channels);
 
-	float px[256];
-	for (int i = 0; i < 256; ++i)
-		px[i] = countPixels(channels[0],(Scalar)i) / (float)(in.rows * in.cols);
+	float px[255];
+	int size = in.rows * in.cols;
+	for (int i = 0; i < 255; ++i)
+		px[i] = countPixels(channels[0],(Scalar)i);
 
 //	for (int i = 0;i < 256 ; i++) cout << "valuee " << px[i] << endl;
 //	cv::waitKey();
 
 	float cdf[256];
 	cdf[0] = px[0];
-	float max = 0;
-	for (int i = 1; i < 256; ++i) {
+	float min = 255;
+	for (int i = 1; i < 255; ++i) {
 		 cdf[i] = ( cdf[i-1] + px[i] );
-		 if (cdf[i] > max ) max = cdf[i];
+		 if (cdf[i] < min ) min = cdf[i];
 	}
+
+//	for (int i = 0;i < 256 ; i++) cout << "cdfvaluee " << cdf[i] << endl;
+//	cv::waitKey();
 
 	Mat lookUpTable(1, 256, CV_8U);
 	uchar* p = lookUpTable.ptr();
 	for (int i = 0; i < 256; ++i)
-		p[i] = round(((cdf[i] - 1 ) / max) * 255);
+		p[i] = round(((cdf[i] - min ) / (float)(size - min) ) * 255.0f);
 
 //	for (int i = 0;i < 256 ; i++) cout << "valueel " << (int)p[i] << endl;
-//  cv::waitKey();
+//    cv::waitKey();
 
 	LUT(channels[0], lookUpTable,  channels[0]);
-	//channels[2] = out;
-
-//	uchar* pp = channels[0].ptr();
-//	for (int i = 0;i < 256 ; i++) cout << "value " << (int)pp[i] << endl;
-//	cv::waitKey();
 
 	merge(channels,hcv);
 
@@ -251,10 +278,26 @@ Mat equalizarOurs(Mat& in) {
 	return result;
 }
 
-void generarDistorsion(Mat& matriz) {
+void generarDistorsion(Mat& matriz, int mode) {
 	Mat in = matriz.clone();
-	float k1 = -0.5; // para cojín
-	//float k1 = 1;  // para barril
+	float k1 = 0;
+	switch(mode){
+		case 0:
+			k1 = -0.5; // para cojín
+			break;
+
+		case 1:
+			k1 = -0.7; // para cojín
+			break;
+
+		case 2:
+			k1 = 1;  // para barril
+			break;
+		case 3:
+			k1 = 1.25;  // para barril
+			break;
+	}
+
 	float k2 = 0.0;
 	float p1 = 0.0;
 	float p2 = 0.0;

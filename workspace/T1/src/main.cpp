@@ -18,8 +18,13 @@ int  c = 1; // For filename
 int main(int, char**)
 {
 	// VARIABLES
-	double contrast = 2;
+	double contrast = 1;
 	int numeroColores = 64;
+	int alien_mode = 0;
+	int dist_mode = 0;
+	int take_mode = 10;
+
+
 	bool contraste = false;
 	bool reduccionColores = false;
 	bool efectoAlien = false;
@@ -74,10 +79,10 @@ int main(int, char**)
 		if (efectoAlien) {
 					Mat skin = skinMat(frame);
 					//frame = skin;
-					frame = generarAlien(skin,frame);
+					frame = generarAlien(skin,frame, alien_mode);
 
 				}
-		if (distorsion) generarDistorsion(frame);
+		if (distorsion) generarDistorsion(frame, dist_mode);
 		if (take_effect) frame = apply_effect(frame, take_on_me, 10);
 
         // show live and wait for a key with timeout long enough to show images
@@ -106,8 +111,31 @@ int main(int, char**)
 			hist_eq = !hist_eq;
 			break;
         case '7':
-			hist_eq_ours = !hist_eq_ours;
-			break;
+				hist_eq_ours = !hist_eq_ours;
+				break;
+
+
+
+
+        case 'z':
+				dist_mode = (dist_mode + 1) % 4;
+				break;
+        case 'x':
+				alien_mode = (alien_mode + 1) % 3;
+				break;
+        case 'c':
+				contrast = contrast + 0.2;
+				if (contrast > 4) contrast = 1;
+				break;
+        case 'v':
+				numeroColores = (numeroColores + 1) % 64;
+				break;
+        case 'b':
+				take_mode = (take_mode + 10) % 100 + 10;
+				break;
+
+
+
         case '0':
             contraste = false;
             reduccionColores = false;
