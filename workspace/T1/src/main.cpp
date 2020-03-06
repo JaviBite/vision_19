@@ -90,7 +90,10 @@ int main(int, char**)
 
 				}
 		if (distorsion) generarDistorsion(frame, dist_mode);
-		if (take_effect) frame = apply_effect(frame, take_on_me, 10);
+		if (take_effect) {
+			frame = apply_effect(frame, take_on_me, 10);
+			putText(frame,to_string(take_mode),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+		}
 
         // show live and wait for a key with timeout long enough to show images
         imshow("CAMERA 1", frame);  // Window name
