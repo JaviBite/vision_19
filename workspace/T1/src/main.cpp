@@ -23,7 +23,9 @@ int main(int, char**)
 	int numeroColores = 8;
 	int alien_mode = 0;
 	int dist_mode = 0;
-	int take_mode = 10;
+	int take_mode = 2;
+	int gauss_k = 1;
+	int gauss_s = 5;
 
 
 	bool contraste = false;
@@ -33,6 +35,9 @@ int main(int, char**)
 	bool take_effect = false;
 	bool hist_eq = false;
 	bool hist_eq_ours = false;
+	bool gauss = false;
+	bool negative_effect = false;
+	bool gray_scale = false;
 
 	bool uniform = true;
 	bool accumulate = false;
@@ -73,26 +78,36 @@ int main(int, char**)
         //Mat I = apply_effect(frame, take_on_me, 10);
 
         //EFECTOS
+        if (gauss) {
+        	GaussianBlur(frame, frame, Size2i(gauss_s,gauss_s), gauss_k, gauss_k, BORDER_DEFAULT);
+        }
+        if (gray_scale) {
+        	cvtColor(frame, frame, CV_RGB2GRAY);
+        }
 		if (contraste) {
 			frame = apply_effect(frame, contrastF, contrast);
 			putText(frame,to_string(contrast),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
 		}
+		if (hist_eq) frame = equalizarCV(frame);
+		if (hist_eq_ours) frame = equalizarOurs(frame);
 		if (reduccionColores) {
 			frame = apply_effect(frame, reducirColorF, 256 / cbrt(numeroColores));
 			putText(frame,to_string(numeroColores),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
 		}
-		if (hist_eq) frame = equalizarCV(frame);
-		if (hist_eq_ours) frame = equalizarOurs(frame);
-		if (efectoAlien) {
-					Mat skin = skinMat(frame);
-					//frame = skin;
-					frame = generarAlien(skin,frame, alien_mode);
 
-				}
+		if (efectoAlien) {
+			Mat skin = skinMat(frame);
+			//frame = skin;
+			frame = generarAlien(skin,frame, alien_mode);
+
+		}
 		if (distorsion) generarDistorsion(frame, dist_mode);
 		if (take_effect) {
-			frame = apply_effect(frame, take_on_me, 10);
+			frame = apply_effect(frame, take_on_me, take_mode);
 			putText(frame,to_string(take_mode),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+		}
+		if (negative_effect) {
+			frame = apply_effect(frame, negative, 0);
 		}
 
         // show live and wait for a key with timeout long enough to show images
@@ -109,6 +124,7 @@ int main(int, char**)
             reduccionColores = !reduccionColores;
             break;
         case '3':
+        	gray_scale = false;
         	efectoAlien = !efectoAlien;
             break;
         case '4':
@@ -121,8 +137,18 @@ int main(int, char**)
 			hist_eq = !hist_eq;
 			break;
         case '7':
-				hist_eq_ours = !hist_eq_ours;
-				break;
+			hist_eq_ours = !hist_eq_ours;
+			break;
+        case '8':
+			negative_effect = !negative_effect;
+			break;
+        case '9':
+        	efectoAlien = false;
+			gray_scale = !gray_scale;
+			break;
+        case 'g':
+			gauss = !gauss;
+			break;
 
 
 
@@ -143,7 +169,21 @@ int main(int, char**)
         		if (numeroColores > 1331) numeroColores = 8;
 				break;
         case 'b':
-				take_mode = (take_mode + 10) % 100 + 10;
+				take_mode = (take_mode + 2) % 20;
+				break;
+
+
+        case '\'':
+				gauss_k += 1;
+				break;
+        case '¡':
+				gauss_k -= 1;
+				break;
+        case '?':
+				gauss_s += 1;
+				break;
+		case '¿':
+				gauss_s -= 1;
 				break;
 
 
@@ -156,6 +196,9 @@ int main(int, char**)
             take_effect = false;
             hist_eq = false;
 			hist_eq_ours = false;
+			gauss = false;
+			negative_effect = false;
+			gray_scale = false;
         }
 
         if (tipka == 's') {

@@ -139,19 +139,18 @@ Mat apply_effect_rgb(Mat I, function<void (uchar&, uchar&, uchar&, float)> effec
 		}
 	return I;
 }
-
 //YCrCb threshold
-const uchar Y_MIN  = 0;		//0
+const uchar Y_MIN  = 50;		//0
 const uchar Y_MAX  = 255;		//255
 const uchar Cr_MIN = 133;		//133
-const uchar Cr_MAX = 173;		//173
+const uchar Cr_MAX = 170;		//173
 const uchar Cb_MIN = 77;		//77
 const uchar Cb_MAX = 127;		//127
 
 Mat skinMat(const Mat& img){
 	Mat channels[3];
 	Mat ret, no_noise;
-	GaussianBlur(img, no_noise, Size2i(5,5), 5, 5, BORDER_DEFAULT);
+	GaussianBlur(img, no_noise, Size2i(5,5), 10, 10, BORDER_DEFAULT);
 	cvtColor(img,ret,cv::COLOR_BGR2YCrCb);
 	inRange(ret,cv::Scalar(Y_MIN,Cr_MIN,Cb_MIN),cv::Scalar(Y_MAX,Cr_MAX,Cb_MAX),ret);
 	//split(apply_effect_rgb(ret,isSkin,0),channels);
