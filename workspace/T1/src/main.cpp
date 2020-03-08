@@ -117,17 +117,17 @@ int main(int, char**)
 
 
 
-        case 'z':
+        case 'v':
 				dist_mode = (dist_mode + 1) % 4;
 				break;
-        case 'x':
+        case 'c':
 				alien_mode = (alien_mode + 1) % 3;
 				break;
-        case 'c':
+        case 'z':
 				contrast = contrast + 0.2;
 				if (contrast > 4) contrast = 1;
 				break;
-        case 'v':
+        case 'x':
 				numeroColores = (numeroColores + 1) % 64;
 				break;
         case 'b':
