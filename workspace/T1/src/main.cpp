@@ -176,7 +176,7 @@ int main(int, char**)
         		if (numeroColores > 1331) numeroColores = 8;
 				break;
         case 'b':
-				take_mode = (take_mode + 2) % 20;
+				take_mode = (take_mode + 2) % 20 + 2;
 				break;
 
 
