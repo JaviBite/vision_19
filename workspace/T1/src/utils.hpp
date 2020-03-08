@@ -197,8 +197,8 @@ Mat generarAlien(Mat& skin, Mat& I, int mode) {
 
 
 uchar reducirColorF(uchar &a, uchar* end, double aux[]){
-	int num_colors = aux[3];
-	return saturate_cast< uchar >(a/num_colors*num_colors + num_colors/2);
+	int factor = aux[3];
+	return saturate_cast< uchar >(a/factor*factor + factor/2);
 }
 
 uchar contrastF(uchar &a, uchar* end, double aux[]){
