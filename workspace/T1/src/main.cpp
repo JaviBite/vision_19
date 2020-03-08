@@ -124,8 +124,8 @@ int main(int, char**)
             reduccionColores = !reduccionColores;
             break;
         case '3':
-        	gray_scale = false;
         	efectoAlien = !efectoAlien;
+        	if (efectoAlien) gray_scale = false;
             break;
         case '4':
         	distorsion = !distorsion;
@@ -135,16 +135,23 @@ int main(int, char**)
         	break;
         case '6':
 			hist_eq = !hist_eq;
+			if (hist_eq) gray_scale = false;
 			break;
         case '7':
 			hist_eq_ours = !hist_eq_ours;
+			if (hist_eq_ours) gray_scale = false;
 			break;
         case '8':
 			negative_effect = !negative_effect;
 			break;
         case '9':
-        	efectoAlien = false;
 			gray_scale = !gray_scale;
+			if (gray_scale) {
+				efectoAlien = false;
+				hist_eq_ours = false;
+				hist_eq = false;
+			}
+
 			break;
         case 'g':
 			gauss = !gauss;
