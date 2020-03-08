@@ -7,6 +7,7 @@
 #include <string>
 #define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
 
+
 using namespace cv;
 using namespace std;
 

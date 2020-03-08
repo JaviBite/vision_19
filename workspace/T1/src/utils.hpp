@@ -4,6 +4,7 @@
 #include <cmath>
 #define CV_BGR2YCrCb COLOR_BGR2YCrCb
 #define CV_YCrCb2BGR COLOR_YCrCb2BGR
+#define CV_RGB2GRAY COLOR_RGB2GRAY
 
 
 using namespace cv;
@@ -277,6 +278,7 @@ Mat equalizarOurs(Mat& in) {
 }
 
 void generarDistorsion(Mat& matriz, int mode) {
+	// https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html
 	Mat in = matriz.clone();
 	float k1 = 0;
 	switch(mode){
