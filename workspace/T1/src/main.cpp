@@ -170,7 +170,7 @@ int main(int, char**)
 				break;
         case 'z':
 				contrast = contrast + 0.2;
-				if (contrast > 4) contrast = 1;
+				if (contrast > 4) contrast = 0;
 				break;
         case 'x':
 				//numeroColores = (numeroColores + 1) % 64;
@@ -243,7 +243,7 @@ int main(int, char**)
 
         Mat channels[3];
         split(frame,channels);
-        float range[] = { 0, histSize } ; //the upper boundary is exclusive
+        float range[] = { 0, (float)histSize } ; //the upper boundary is exclusive
         const float* histRange = { range };
 
         Mat b_hist, g_hist, r_hist;
