@@ -28,6 +28,8 @@ int main(int, char**)
 	int gauss_k = 1;
 	int gauss_s = 5;
 
+    int histSize = 256; //from 0 to 255
+
 
 	bool contraste = false;
 	bool reduccionColores = false;
@@ -125,8 +127,8 @@ int main(int, char**)
             reduccionColores = !reduccionColores;
             break;
         case '3':
-        	gray_scale = false;
         	efectoAlien = !efectoAlien;
+        	if (efectoAlien) gray_scale = false;
             break;
         case '4':
         	distorsion = !distorsion;
@@ -136,16 +138,23 @@ int main(int, char**)
         	break;
         case '6':
 			hist_eq = !hist_eq;
+			if (hist_eq) gray_scale = false;
 			break;
         case '7':
 			hist_eq_ours = !hist_eq_ours;
+			if (hist_eq_ours) gray_scale = false;
 			break;
         case '8':
 			negative_effect = !negative_effect;
 			break;
         case '9':
-        	efectoAlien = false;
 			gray_scale = !gray_scale;
+			if (gray_scale) {
+				efectoAlien = false;
+				hist_eq_ours = false;
+				hist_eq = false;
+			}
+
 			break;
         case 'g':
 			gauss = !gauss;
@@ -170,7 +179,7 @@ int main(int, char**)
         		if (numeroColores > 1331) numeroColores = 8;
 				break;
         case 'b':
-				take_mode = (take_mode + 2) % 20;
+				take_mode = (take_mode + 2) % 20 + 2;
 				break;
 
 
@@ -187,6 +196,11 @@ int main(int, char**)
 				gauss_s -= 1;
 				break;
 
+		case 's':
+			if (histSize >= 256 ) histSize = 250;
+			else histSize = 256;
+			break;
+
 
 
         case '0':
@@ -202,7 +216,7 @@ int main(int, char**)
 			gray_scale = false;
         }
 
-        if (tipka == 's') {
+        if (tipka == 'd') {
 
             sprintf(filename, "C://Frame_%d.jpg", c); // select your folder - filename is "Frame_n"
             ofstream f_out("C://Frame.jpg");
@@ -230,8 +244,7 @@ int main(int, char**)
 
         Mat channels[3];
         split(frame,channels);
-        int histSize = 256; //from 0 to 255
-        float range[] = { 0, 256 } ; //the upper boundary is exclusive
+        float range[] = { 0, histSize } ; //the upper boundary is exclusive
         const float* histRange = { range };
 
         Mat b_hist, g_hist, r_hist;
