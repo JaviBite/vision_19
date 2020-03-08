@@ -27,6 +27,8 @@ int main(int, char**)
 	int gauss_k = 1;
 	int gauss_s = 5;
 
+    int histSize = 256; //from 0 to 255
+
 
 	bool contraste = false;
 	bool reduccionColores = false;
@@ -193,6 +195,11 @@ int main(int, char**)
 				gauss_s -= 1;
 				break;
 
+		case 's':
+			if (histSize >= 256 ) histSize = 250;
+			else histSize = 256;
+			break;
+
 
 
         case '0':
@@ -208,7 +215,7 @@ int main(int, char**)
 			gray_scale = false;
         }
 
-        if (tipka == 's') {
+        if (tipka == 'd') {
 
             sprintf(filename, "C://Frame_%d.jpg", c); // select your folder - filename is "Frame_n"
             ofstream f_out("C://Frame.jpg");
@@ -236,8 +243,7 @@ int main(int, char**)
 
         Mat channels[3];
         split(frame,channels);
-        int histSize = 256; //from 0 to 255
-        float range[] = { 0, 256 } ; //the upper boundary is exclusive
+        float range[] = { 0, histSize } ; //the upper boundary is exclusive
         const float* histRange = { range };
 
         Mat b_hist, g_hist, r_hist;
