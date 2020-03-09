@@ -85,7 +85,7 @@ uchar take_on_me(uchar &a, uchar* end, double aux[]){
 	int nChannels = aux[2];
 	int threshold = aux[3];
 	uchar* main = &a;
-	uchar* next = &a + 3;
+	uchar* next = &a + nChannels;
 	uchar* down = &a + (nChannels * nCols);
 	if ( (next < end && abs((int)*main - (int)*next) < threshold) ||
 		 (down < end && abs((int)*main - (int)*down) < threshold)    ) {

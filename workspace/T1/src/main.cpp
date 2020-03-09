@@ -27,6 +27,8 @@ int main(int, char**)
 	int take_mode = 2;
 	int gauss_k = 1;
 	int gauss_s = 5;
+	int pixels = 64;
+	int interpolation = INTER_NEAREST;
 
     int histSize = 256; //from 0 to 255
 
@@ -41,6 +43,7 @@ int main(int, char**)
 	bool gauss = false;
 	bool negative_effect = false;
 	bool gray_scale = false;
+	bool pixel = false;
 
 	bool uniform = true;
 	bool accumulate = false;
@@ -63,7 +66,26 @@ int main(int, char**)
     }
     //--- GRAB AND WRITE LOOP
     cout << "Start grabbing" << endl
-        << "Press a to terminate" << endl;
+         << "Press q to terminate" << endl
+    << "Press a to alternate accumulated/normal histogram" << endl
+    << "Press s to alternate max of histogram (250/256)" << endl
+    << "Press g to switch gaussian blur" << endl
+	<< "Press p to switch pixel mode (press +/- modify num of pixels and press * to switch interpolations" << endl
+    << "EFFECTS:\n-------------" << endl
+    << "0 to reset effects" << endl
+    << "1 contrast (press z to increase)" << endl
+    << "2 color reduction (press x to increase)" << endl
+    << "3 alien (press c to change colour)" << endl
+    << "4 distortion (press v to change dist)" << endl
+    << "5 take on me (press b to increase threshold)" << endl
+    << "6 equalization openCV " << endl
+    << "7 equalization ours" << endl
+    << "8 negative" << endl
+	<< "9 gray scale" << endl
+	<< "COOL COMBINATIONS\n---------------" << endl
+	<< "8 + 5 + b + g" << endl
+	<< "4 + v + v + 9 + p + *" << endl;
+
     for (;;)
     {
         // wait for a new frame from camera and store it into 'frame'
@@ -88,7 +110,20 @@ int main(int, char**)
         	cvtColor(frame, frame, CV_RGB2GRAY);
         }
 		if (contraste) {
-			frame = apply_effect(frame, contrastF, contrast);
+
+			Mat ycrcb;
+
+				cvtColor(frame,ycrcb,CV_BGR2HSV);
+
+				vector<Mat> channels;
+				split(ycrcb,channels);
+
+				Mat result = apply_effect(channels[2], contrastF, contrast);
+				merge(channels,ycrcb);
+
+				cvtColor(ycrcb,frame,CV_HSV2BGR);
+
+			//frame = apply_effect(frame, contrastF, contrast);
 			putText(frame,to_string(contrast),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
 		}
 		if (hist_eq) frame = equalizarCV(frame);
@@ -104,14 +139,20 @@ int main(int, char**)
 			frame = generarAlien(skin,frame, alien_mode);
 
 		}
-		if (distorsion) generarDistorsion(frame, dist_mode);
+
 		if (take_effect) {
-			frame = apply_effect(frame, take_on_me, take_mode);
+			frame = (frame + apply_effect(frame, take_on_me, take_mode)) / 2;
 			putText(frame,to_string(take_mode),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
 		}
 		if (negative_effect) {
 			frame = apply_effect(frame, negative, 0);
 		}
+		if (pixel) {
+			Mat temp;
+			resize(frame, temp, Size2i(pixels, pixels), 0, 0, INTER_LINEAR);
+			resize(temp, frame, Size2i(frame.cols, frame.rows), 0, 0, interpolation);
+		}
+		if (distorsion) generarDistorsion(frame, dist_mode);
 
         // show live and wait for a key with timeout long enough to show images
         imshow("CAMERA 1", frame);  // Window name
@@ -156,6 +197,9 @@ int main(int, char**)
 			}
 
 			break;
+        case 'p':
+        	pixel = !pixel;
+        	break;
         case 'g':
 			gauss = !gauss;
 			break;
@@ -195,6 +239,17 @@ int main(int, char**)
 		case '¿':
 				gauss_s -= 1;
 				break;
+		case '+':
+				pixels = pixels + 10;
+				break;
+		case '-':
+				pixels = pixels - 10;
+				if (pixels < 1) pixels = 1;
+				break;
+		case '*':
+				if (interpolation == INTER_NEAREST) interpolation = INTER_LINEAR;
+				else interpolation = INTER_NEAREST;
+				break;
 
 		case 's':
 			if (histSize >= 256 ) histSize = 250;
@@ -214,6 +269,16 @@ int main(int, char**)
 			gauss = false;
 			negative_effect = false;
 			gray_scale = false;
+			pixel = false;
+
+			contrast = 1;
+			numeroColores = 8;
+			alien_mode = 0;
+			dist_mode = 0;
+			take_mode = 2;
+			gauss_k = 1;
+			gauss_s = 5;
+			pixels = 16;
         }
 
         if (tipka == 'd') {
