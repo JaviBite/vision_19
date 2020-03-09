@@ -1,4 +1,5 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui_c.h>
 #include <iostream>
 #include <stdio.h>
 #include <windows.h> // For Sleep
@@ -6,8 +7,6 @@
 #include <fstream>
 #include <string>
 #define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
-
-
 using namespace cv;
 using namespace std;
 
@@ -115,15 +114,15 @@ int main(int, char**)
 
 			Mat ycrcb;
 
-				cvtColor(frame,ycrcb,CV_BGR2HSV);
+			cvtColor(frame,ycrcb,CV_BGR2HSV);
 
-				vector<Mat> channels;
-				split(ycrcb,channels);
+			vector<Mat> channels;
+			split(ycrcb,channels);
 
-				Mat result = apply_effect(channels[2], contrastF, contrast);
-				merge(channels,ycrcb);
+			Mat result = apply_effect(channels[2], contrastF, contrast);
+			merge(channels,ycrcb);
 
-				cvtColor(ycrcb,frame,CV_HSV2BGR);
+			cvtColor(ycrcb,frame,CV_HSV2BGR);
 
 			//frame = apply_effect(frame, contrastF, contrast);
 			putText(frame,to_string(contrast),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
@@ -147,7 +146,7 @@ int main(int, char**)
 
 				// replace pixel values with their center value:
 				Vec3f *p = data.ptr<Vec3f>();
-				for (size_t i=0; i<data.rows; i++) {
+				for (size_t i=0; (int)i<data.rows; i++) {
 				   int center_id = labels.at<int>(i);
 				   p[i] = centers.at<Vec3f>(center_id);
 				}
