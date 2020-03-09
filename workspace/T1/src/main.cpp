@@ -44,6 +44,7 @@ int main(int, char**)
 	bool negative_effect = false;
 	bool gray_scale = false;
 	bool pixel = false;
+	bool k_means = false;
 
 	bool uniform = true;
 	bool accumulate = false;
@@ -84,7 +85,8 @@ int main(int, char**)
 	<< "9 gray scale" << endl
 	<< "COOL COMBINATIONS\n---------------" << endl
 	<< "8 + 5 + b + g" << endl
-	<< "4 + v + v + 9 + p + *" << endl;
+	<< "4 + v + v + 9 + p + *" << endl
+    << "p + '+'7 + 2 + x5" << endl;
 
     for (;;)
     {
@@ -129,8 +131,35 @@ int main(int, char**)
 		if (hist_eq) frame = equalizarCV(frame);
 		if (hist_eq_ours) frame = equalizarOurs(frame);
 		if (reduccionColores) {
-			frame = apply_effect(frame, reducirColorF, 256 / cbrt(numeroColores));
-			putText(frame,to_string(numeroColores),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+			if (k_means && !gray_scale) {
+				Mat data;
+				frame.convertTo(data,CV_32F);
+				data = data.reshape(1,data.total());
+
+				// do kmeans
+				Mat labels, centers;
+				kmeans(data, 8, labels, TermCriteria(CV_TERMCRIT_ITER, 10, 1.0), 3,
+				       KMEANS_PP_CENTERS, centers);
+
+				// reshape both to a single row of Vec3f pixels:
+				centers = centers.reshape(3,centers.rows);
+				data = data.reshape(3,data.rows);
+
+				// replace pixel values with their center value:
+				Vec3f *p = data.ptr<Vec3f>();
+				for (size_t i=0; i<data.rows; i++) {
+				   int center_id = labels.at<int>(i);
+				   p[i] = centers.at<Vec3f>(center_id);
+				}
+
+				// back to 2d, and uchar:
+				frame = data.reshape(3, frame.rows);
+				frame.convertTo(frame, CV_8U);
+			}
+			else {
+				frame = apply_effect(frame, reducirColorF, 256 / cbrt(numeroColores));
+				putText(frame,to_string(numeroColores),Point2f(16,20),FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255), 2 , 8 , false);
+			}
 		}
 
 		if (efectoAlien) {
@@ -249,6 +278,9 @@ int main(int, char**)
 		case '*':
 				if (interpolation == INTER_NEAREST) interpolation = INTER_LINEAR;
 				else interpolation = INTER_NEAREST;
+				break;
+		case 'k':
+				k_means = !k_means;
 				break;
 
 		case 's':
