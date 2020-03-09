@@ -145,11 +145,8 @@ int main(int, char**)
 
 
 				Vec3f *p = data.ptr<Vec3f>();
-<<<<<<< HEAD
-				for (size_t i=0; (int)i<data.rows; i++) {
-=======
+
 				for (size_t i=  0; (int)i < data.rows; i++) {
->>>>>>> cbe1af0c6a3d831c39ed520edabb74be61371f5d
 				   int center_id = labels.at<int>(i);
 				   p[i] = centers.at<Vec3f>(center_id);
 				}
