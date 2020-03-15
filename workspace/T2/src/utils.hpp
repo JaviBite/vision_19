@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <functional>
 #include <cmath>
+#include <vector>
 #define CV_BGR2YCrCb COLOR_BGR2YCrCb
 #define CV_YCrCb2BGR COLOR_YCrCb2BGR
 #define CV_RGB2GRAY COLOR_RGB2GRAY
@@ -43,6 +44,17 @@ Mat toBinaryAdapt(Mat &img, int maxval, int type, int method, int blocksize, int
 
 	cv::adaptiveThreshold(ret, ret, maxval, method, type, blocksize, C);
 
+	return ret;
+}
+
+Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> size) {
+	Mat ret = Mat::zeros( size, CV_8UC3 );
+	RNG rng(12345);
+
+	for( int i = 0; i< (int)contours.size(); i++ ) {
+		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+		cv::drawContours( ret, contours, i, color);
+	}
 	return ret;
 }
 

@@ -61,14 +61,15 @@ int main(int, char**) {
 
 	int mode = CV_RETR_TREE;
 	int method = CV_CHAIN_APPROX_NONE;
-	RNG rng(12345);
 
 	cv::findContours(image, contours, hierarchy, mode, method);
 	//cv::drawContours(draw_contours, contours, -1, cv::COLORMAP_JET);
-	for( int i = 0; i< contorus.size(); i++ ) {
-		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-		cv::drawContours( draw_contours, contours, i, color, 2, 8, hierarchy, 0, Point() );
-	}
+//	for( int i = 0; i< contours.size(); i++ ) {
+//		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+//		cv::drawContours( draw_contours, contours, i, color, 2, 8, hierarchy, 0, Point() );
+//	}
+
+	draw_contours = drawableContours(contours, image.size());
 
 	imshow("Contours", draw_contours);                   // Show our image inside it.
 	waitKey(0);
