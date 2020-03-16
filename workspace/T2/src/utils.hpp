@@ -3,6 +3,7 @@
 #include <functional>
 #include <cmath>
 #include <vector>
+#include <fstream>
 #define CV_BGR2YCrCb COLOR_BGR2YCrCb
 #define CV_YCrCb2BGR COLOR_YCrCb2BGR
 #define CV_RGB2GRAY COLOR_RGB2GRAY
@@ -65,6 +66,8 @@ Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> s
 }
 
 void calculateParameters(vector<vector<Point>> &contours){
+
+	// sacado de aquí: https://docs.opencv.org/3.4/d0/d49/tutorial_moments.html
 	vector<Moments> mu(contours.size() );
 	for( size_t i = 0; i < contours.size(); i++ )
 	{
@@ -81,6 +84,51 @@ void calculateParameters(vector<vector<Point>> &contours){
 		cout << "Momento 0: " << hu[0] << endl;
 		cout << "Momento 1: " << hu[1] << endl;
 		cout << "Momento 2: " << hu[2] << endl << endl;
+	}
+}
+
+void aprender (String imagen, String objeto) {
+	if (!objeto.compare("vagon") &&
+		!objeto.compare("rectangulo") &&
+		!objeto.compare("triangulo") &&
+		!objeto.compare("circulo") &&
+		!objeto.compare("rueda") ){
+		cout << "Objeto no válido" << endl;
+	}
+	else{
+		// calcular blob objeto
+		Mat image;
+		image = imread(imagen, CV_LOAD_IMAGE_COLOR);
+		checkImg(image);
+		imshow("Display window", image );
+		waitKey(0);
+		cvDestroyWindow("Display window");
+
+		image = toBinaryOtsu(image);
+
+		Mat draw_contours = Mat::zeros( image.size(), CV_8UC3 );
+		std::vector<std::vector<Point>> contours;
+		std::vector<Vec4i> hierarchy;
+
+		int mode = CV_RETR_TREE;
+		int method = CV_CHAIN_APPROX_NONE;
+
+		cv::findContours(image, contours, hierarchy, mode, method);
+		drawContours(draw_contours,contours,0, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
+		imshow("Contours", draw_contours);
+		waitKey(0);
+
+		// calcular media y varianza por el blob
+		Scalar mean,dev;
+		meanStdDev(draw_contours,mean,dev);
+		cout << "media " << mean << " stddev " << dev << endl;
+
+		//escribir en fichero
+		ofstream salida;
+		salida.open("files/objetos.txt", ios::out | ios::app );
+		salida << objeto << " " << mean[0] << " " << mean[1] << " " << dev[0] << " " << dev[1] << endl;
+		salida.close();
+
 	}
 }
 
