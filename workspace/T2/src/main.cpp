@@ -6,8 +6,6 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#define CV_WINDOW_AUTOSIZE WINDOW_AUTOSIZE
-#define CV_TERMCRIT_ITER 1
 
 
 using namespace cv;
