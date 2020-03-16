@@ -66,10 +66,16 @@ int main(int, char**) {
 //		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
 //		cv::drawContours( draw_contours, contours, i, color, 2, 8, hierarchy, 0, Point() );
 //	}
+	 // dibujar todos los contornos
+	//drawContours(draw_contours,contours,-1, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
+	for( size_t i = 0; i < contours.size(); i++ )
+	{
+		drawContours(draw_contours,contours,i, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
+		imshow("Contours", draw_contours);                   // Show our image inside it.
+		waitKey(0);
+	}
 
-	drawContours(draw_contours,contours,-1, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
-	imshow("Contours", draw_contours);                   // Show our image inside it.
-	waitKey(0);
+
 	cvDestroyWindow("Contours");
 
 	// Point 3: Parameters
