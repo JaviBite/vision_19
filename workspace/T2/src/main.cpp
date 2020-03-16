@@ -60,6 +60,8 @@ int main(int, char**) {
 	int mode = CV_RETR_TREE;
 	int method = CV_CHAIN_APPROX_NONE;
 
+
+
 	cv::findContours(image, contours, hierarchy, mode, method);
 	//cv::drawContours(draw_contours, contours, -1, cv::COLORMAP_JET);
 //	for( int i = 0; i< contours.size(); i++ ) {
@@ -90,6 +92,8 @@ int main(int, char**) {
 
 
 	aprender("files/imagenesT2/circulo1.pgm","circulo");
+	aprender("files/imagenesT2/rectangulo1.pgm","rectangulo");
+	aprender("files/imagenesT2/rectangulo2.pgm","rectangulo");
 
     return 0;
 }

@@ -121,7 +121,7 @@ void aprender (String imagen, String objeto) {
 		// calcular media y varianza por el blob
 		Scalar mean,dev;
 		meanStdDev(draw_contours,mean,dev);
-		cout << "media " << mean << " stddev " << dev << endl;
+		cout << objeto << ": media " << mean << " stddev " << dev << endl;
 
 		//escribir en fichero
 		ofstream salida;
