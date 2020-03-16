@@ -65,21 +65,22 @@ Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> s
 }
 
 void calculateParameters(vector<vector<Point>> &contours){
-	double area, length;
-	double hu[7];
+	vector<Moments> mu(contours.size() );
 	for( size_t i = 0; i < contours.size(); i++ )
 	{
-		Moments m = moments( contours[0] );
-		area = m.m00;
-		length = arcLength( contours[0], true );
+		mu[i] = moments( contours[i] );
+	}
 
-		HuMoments(m, hu);
-
+	for( size_t i = 0; i < contours.size(); i++ )
+	{
 		cout << "CONTORNO " << i << endl;
-		cout << "Area: "<< area << endl << "Perímetro: " << length << endl;
+		cout << "Area: "<<  std::fixed << std::setprecision(2) << mu[i].m00 << endl;
+		cout << "Perímetro: " << arcLength( contours[i], true ) << endl;
+		double hu[7];
+		HuMoments(mu[i],hu);
 		cout << "Momento 0: " << hu[0] << endl;
 		cout << "Momento 1: " << hu[1] << endl;
-		cout << "Momento 2: " << hu[2] << endl;
+		cout << "Momento 2: " << hu[2] << endl << endl;
 	}
 }
 

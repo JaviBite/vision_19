@@ -45,7 +45,7 @@ int main(int, char**) {
 
 	//Point 2: Contours
 
-	image = imread("files/imagenesT2/circulo1.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
+	image = imread("files/imagenesT2/reco1.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
 	checkImg(image);
 
 	imshow("Display window", image );                   // Show our image inside it.
