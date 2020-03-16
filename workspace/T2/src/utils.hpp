@@ -64,6 +64,14 @@ Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> s
 	return ret;
 }
 
+void calculateParameters(vector<vector<Point>> &contours, double &area, double &length, double hu[]){
+	Moments m = moments( contours[0] );
+	area = m.m00;
+	length = arcLength( contours[0], true );
+
+	HuMoments(m, hu);
+}
+
 
 void showHist(Mat &frame) {
 	 //Historiogram
