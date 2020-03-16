@@ -75,15 +75,11 @@ int main(int, char**) {
 
 	// Point 3: Parameters
 
-	double area, length;
-	double hu[7];
+	calculateParameters(contours);
 
-	calculateParameters(contours, area, length, hu);
 
-	cout << "Area: "<< area << endl << "Perímetro: " << length << endl;
-	cout << "Momento 0: " << hu[0] << endl;
-	cout << "Momento 1: " << hu[1] << endl;
-	cout << "Momento 2: " << hu[2] << endl;
+	// Punto 4: Aprendizaje supervisado
+
 
 
 
