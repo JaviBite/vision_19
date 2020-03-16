@@ -67,8 +67,7 @@ int main(int, char**) {
 //		cv::drawContours( draw_contours, contours, i, color, 2, 8, hierarchy, 0, Point() );
 //	}
 
-	draw_contours = drawableContours(contours, image.size());
-
+	drawContours(draw_contours,contours,-1, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
 	imshow("Contours", draw_contours);                   // Show our image inside it.
 	waitKey(0);
 	cvDestroyWindow("Contours");
