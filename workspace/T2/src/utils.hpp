@@ -285,7 +285,6 @@ vector<String> reconocer(String file, vector<Fig> clases) {
 	for (vector<Point> bolb : contours) {
 		for (Fig f: clases) {
 			double d = mahalanobis(bolb, f);
-			std::cout << f.nombre << " " << d  << std::endl;
 			if ( d < CHI_TEST)
 				ret.push_back(f.nombre);
 		}
