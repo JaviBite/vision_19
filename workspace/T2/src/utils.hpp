@@ -35,17 +35,17 @@ bool accumulate_hist = false;
 
 struct Fig {
 	std::string nombre;
-	float mean_area;
-	float mean_perim;
-	float mean_m0;
-	float mean_m1;
-	float mean_m2;
+	double mean_area;
+	double mean_perim;
+	double mean_m0;
+	double mean_m1;
+	double mean_m2;
 
-	float std_area;
-	float std_perim;
-	float std_m0;
-	float std_m1;
-	float std_m2;
+	double std_area;
+	double std_perim;
+	double std_m0;
+	double std_m1;
+	double std_m2;
 };
 
 void checkImg(Mat img) {
@@ -95,7 +95,7 @@ vector<vector<float>> calculateParameters(vector<vector<Point>> &contours){
 	vector<vector<float>> ret(contours.size());
 	for( size_t i = 0; i < contours.size(); i++ )
 	{
-		mu[i] = moments( contours[i] );
+		mu[i] = moments( contours[i], true );
 	}
 
 	for( size_t i = 0; i < contours.size(); i++ )
@@ -166,25 +166,62 @@ void aprender (String imagen, String objeto) {
 	}
 }
 
-//double mahalanobis(Mat x, Fig f) {
-//	/* Calcula los descriptores de imagen */
-//	double perimeter = arcLength(x, true);
-//
-//	Moments m = moments(x, true);
-//	double inv[7];
-//	HuMoments(m, inv);
-//	double area = m.m00;
-//	double inv1 = inv[1];
-//	double inv2 = inv[2];
-//
-//	double d = pow((area - f.area_media), 2) / ((double) f.area_varianza);
-//	d += pow((perimeter - f.perimetro_media), 2)
-//			/ ((double) f.perimetro_varianza);
-//	d += pow((inv1 - f.m1_media), 2) / ((double) f.m1_varianza);
-//	d += pow((inv2 - f.m2_media), 2) / ((double) f.m2_varianza);
-//
-//	return d;
-//}
+double mahalanobis(vector<vector<Point>> cnt, Fig f) {
+
+	double perimeter = arcLength(cnt, true);
+	Moments m = moments(cnt, true);
+	double hu[7];
+	HuMoments(m, hu);
+	double area = m.m00;
+
+	double d;
+	d  = pow((area - f.mean_area), 2) / f.std_area;
+	d += pow((perimeter - f.mean_perim), 2)	/ f.std_perim;
+	d += pow((hu[0] - f.mean_m0), 2) / f.std_m0;
+	d += pow((hu[1] - f.mean_m1), 2) / f.std_m1;
+	d += pow((hu[2] - f.mean_m2), 2) / f.std_m2;
+
+	return d;
+}
+
+Fig getFigura(String nombre, vector<vector<float>> samples) {
+	Fig f;
+		int N = samples.size();
+		vector<vector<float>> all_params(N); // area, perim, m0, m1 ,m2
+		for (vector<float> v : samples) {
+			for (int i = 0; i < 5; i++) {
+				all_params[i].push_back(v[i]);
+			}
+		}
+
+		vector<float> final_params(10);
+
+		for (int i = 0; i < 5; i++) {
+			double sum = std::accumulate(all_params[i].begin(), all_params[i].end(), 0.0);
+			double mean = sum / all_params[i].size();
+
+			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
+			double stdev = std::sqrt(sq_sum / all_params[i].size() - mean * mean);
+			final_params[i] = mean;
+			final_params[i+5] = stdev;
+		}
+
+		f.mean_area = final_params[0];
+		f.mean_perim = final_params[1];
+		f.mean_m0 = final_params[2];
+		f.mean_m1 = final_params[3];
+		f.mean_m2 = final_params[4];
+
+		f.std_area = final_params[5];
+		f.std_perim = final_params[6];
+		f.std_m0 = final_params[7];
+		f.std_m1 = final_params[8];
+		f.std_m2 = final_params[9];
+
+		f.nombre = nombre;
+
+		return f;
+}
 
 void reconocer (String imagen) {
 	ifstream input;
@@ -220,27 +257,13 @@ void reconocer (String imagen) {
 			else if(nombre == "rectangulo")
 				rectangulo.push_back(data);
 	}
-	std::cout << "rectangulo" << endl;;
-	int N = rectangulo.size();
-	vector<float> area, perim;
-	for (vector<float> v : rectangulo) {
-		std::cout << "AREA  = " << v[0] << std::endl;
-		std::cout << "PERIM = " << v[1] << std::endl;
-		std::cout << "M0    = " << v[2] << std::endl;
-		std::cout << "M1    = " << v[3] << std::endl;
-		std::cout << "M2    = " << v[4] << std::endl;
-		std::cout << "----" << endl;
-		area.push_back(v[0]);
-	}
 
-	double sum = std::accumulate(area.begin(), area.end(), 0.0);
-	double mean = sum / area.size();
+	Fig rect = getFigura("rectangulo", rectangulo);
+	Fig circ = getFigura("circulo", circulo);
+	Fig vag = getFigura("vagon", vagon);
+	Fig rued = getFigura("rueda", rueda);
+	Fig tria = getFigura("triangulo", triangulo);
 
-	double sq_sum = std::inner_product(area.begin(), area.end(), area.begin(), 0.0);
-	double stdev = std::sqrt(sq_sum / area.size() - mean * mean);
-
-	std::cout << "MEAN AREA    = " << mean << std::endl;
-	std::cout << "STD AREAM    = " << stdev << std::endl;
 }
 
 
