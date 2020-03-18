@@ -57,35 +57,36 @@ int main(int, char**) {
 	std::vector<std::vector<Point>> contours;
 	std::vector<Vec4i> hierarchy;
 
-	int mode = CV_RETR_TREE;
-	int method = CV_CHAIN_APPROX_NONE;
-
-
+	int mode = CONT_MODE;
+	int method = CONT_METH;
 
 	cv::findContours(image, contours, hierarchy, mode, method);
-	//cv::drawContours(draw_contours, contours, -1, cv::COLORMAP_JET);
-//	for( int i = 0; i< contours.size(); i++ ) {
-//		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-//		cv::drawContours( draw_contours, contours, i, color, 2, 8, hierarchy, 0, Point() );
+	std::sort(contours.begin(), contours.end(), compareContourAreas);
+//	for( size_t i = 0; i < contours.size(); i++ )
+//	{
+//		drawContours(draw_contours,contours,i, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
+//		imshow("Contours", draw_contours);
+//		waitKey(0);
 //	}
-
-
-	 // dibujar todos los contornos
-	//drawContours(draw_contours,contours,-1, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
-	// dibujar cada contorno paso a paso
-	for( size_t i = 0; i < contours.size(); i++ )
-	{
-		drawContours(draw_contours,contours,i, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
-		imshow("Contours", draw_contours);
-		waitKey(0);
-	}
-
+	Mat drawCont = drawableContours(contours, image.size());
+	imshow("Contours", drawCont);
+	waitKey(0);
 
 	cvDestroyWindow("Contours");
 
 	// Point 3: Parameters
 
-	calculateParameters(contours);
+	std::vector<vector<float>> params = calculateParameters(contours);
+	int i = 1;
+	for (std::vector<float> contorno: params) {
+		std::cout << "CONTORNO " << i << std::endl;
+		std::cout << "AREA  = " << contorno[0] << std::endl;
+		std::cout << "PERIM = " << contorno[1] << std::endl;
+		std::cout << "M0    = " << contorno[2] << std::endl;
+		std::cout << "M1    = " << contorno[3] << std::endl;
+		std::cout << "M2    = " << contorno[4] << std::endl;
+		i++;
+	}
 
 
 	// Punto 4: Aprendizaje supervisado
@@ -94,6 +95,10 @@ int main(int, char**) {
 	aprender("files/imagenesT2/circulo1.pgm","circulo");
 	aprender("files/imagenesT2/rectangulo1.pgm","rectangulo");
 	aprender("files/imagenesT2/rectangulo2.pgm","rectangulo");
+
+	// Punto 5: Reconocer
+
+	reconocer("files/imagenesT2/rectangulo1.pgm");
 
     return 0;
 }
