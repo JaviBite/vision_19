@@ -24,8 +24,10 @@ using namespace cv;
 using namespace std;
 
 const String FILE_ITEMS = "files/objetos.txt";
-static const int CONT_MODE = CV_RETR_EXTERNAL;
-static const int CONT_METH = CV_CHAIN_APPROX_SIMPLE;
+const float CHI_TEST = 11.07;		//m = 5, 0.05
+
+static const int CONT_MODE = CV_RETR_TREE;
+static const int CONT_METH = CV_CHAIN_APPROX_NONE;
 
 
 int histSize = 256; //from 0 to 255
@@ -93,13 +95,11 @@ vector<vector<float>> calculateParameters(vector<vector<Point>> &contours){
 	vector<Moments> mu(contours.size() );
 
 	vector<vector<float>> ret(contours.size());
-	for( size_t i = 0; i < contours.size(); i++ )
-	{
+	for( size_t i = 0; i < contours.size(); i++ ) {
 		mu[i] = moments( contours[i], true );
 	}
 
-	for( size_t i = 0; i < contours.size(); i++ )
-	{
+	for( size_t i = 0; i < contours.size(); i++ ) {
 		double hu[7];
 		HuMoments(mu[i],hu);
 
@@ -134,9 +134,6 @@ void aprender (String imagen, String objeto) {
 		Mat image;
 		image = imread(imagen, CV_LOAD_IMAGE_COLOR);
 		checkImg(image);
-		imshow("Display window", image );
-		waitKey(0);
-		cvDestroyWindow("Display window");
 
 		image = toBinaryOtsu(image);
 
@@ -166,7 +163,7 @@ void aprender (String imagen, String objeto) {
 	}
 }
 
-double mahalanobis(vector<vector<Point>> cnt, Fig f) {
+double mahalanobis(vector<Point> cnt, Fig f) {
 
 	double perimeter = arcLength(cnt, true);
 	Moments m = moments(cnt, true);
@@ -202,6 +199,10 @@ Fig getFigura(String nombre, vector<vector<float>> samples) {
 
 			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
 			double stdev = std::sqrt(sq_sum / all_params[i].size() - mean * mean);
+
+			double prioriDev = pow(mean*0.1, 2);
+			stdev = (prioriDev/(double)N) + (((N - 1)/(double)N) * stdev);
+
 			final_params[i] = mean;
 			final_params[i+5] = stdev;
 		}
@@ -223,7 +224,7 @@ Fig getFigura(String nombre, vector<vector<float>> samples) {
 		return f;
 }
 
-void reconocer (String imagen) {
+vector<Fig> modelo () {
 	ifstream input;
 	input.open(FILE_ITEMS, ios::in | ios::app );
 	vector<vector<float>> circulo, vagon, rectangulo, triangulo, rueda;
@@ -264,6 +265,33 @@ void reconocer (String imagen) {
 	Fig rued = getFigura("rueda", rueda);
 	Fig tria = getFigura("triangulo", triangulo);
 
+	vector<Fig> figuras = {rect, circ, vag, rued, tria};
+
+	return figuras;
+
+}
+
+vector<String> reconocer(String file, vector<Fig> clases) {
+	Mat image;
+	image = imread(file, CV_LOAD_IMAGE_COLOR);
+	checkImg(image);
+
+	image = toBinaryOtsu(image);
+
+	std::vector<std::vector<Point>> contours;
+	cv::findContours(image, contours, noArray(), CONT_MODE, CONT_METH);
+
+	vector<String> ret;
+	for (vector<Point> bolb : contours) {
+		for (Fig f: clases) {
+			double d = mahalanobis(bolb, f);
+			std::cout << f.nombre << " " << d  << std::endl;
+			if ( d < CHI_TEST)
+				ret.push_back(f.nombre);
+		}
+	}
+
+	return ret;
 }
 
 
