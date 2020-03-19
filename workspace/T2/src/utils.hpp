@@ -4,6 +4,9 @@
 #include <cmath>
 #include <vector>
 #include <fstream>
+#include <algorithm>
+#include <numeric>
+
 #define CV_BGR2YCrCb COLOR_BGR2YCrCb
 #define CV_YCrCb2BGR COLOR_YCrCb2BGR
 #define CV_RGB2GRAY COLOR_RGB2GRAY
@@ -20,11 +23,32 @@
 using namespace cv;
 using namespace std;
 
+const String FILE_ITEMS = "files/objetos.txt";
+const float CHI_TEST = 11.07;		//m = 5, 0.05
+
+static const int CONT_MODE = CV_RETR_TREE;
+static const int CONT_METH = CV_CHAIN_APPROX_NONE;
+
 
 int histSize = 256; //from 0 to 255
 bool uniform = true;
 bool accumulat = false;
 bool accumulate_hist = false;
+
+struct Fig {
+	std::string nombre;
+	double mean_area;
+	double mean_perim;
+	double mean_m0;
+	double mean_m1;
+	double mean_m2;
+
+	double std_area;
+	double std_perim;
+	double std_m0;
+	double std_m1;
+	double std_m2;
+};
 
 void checkImg(Mat img) {
 	if(!img.data ) {                          // Check for invalid input
@@ -60,31 +84,41 @@ Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> s
 
 	for( int i = 0; i< (int)contours.size(); i++ ) {
 		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-		cv::drawContours( ret, contours, i, color);
+		cv::drawContours( ret, contours, i, color,-1,8,noArray(), 2, Point() );
 	}
 	return ret;
 }
 
-void calculateParameters(vector<vector<Point>> &contours){
+vector<vector<float>> calculateParameters(vector<vector<Point>> &contours){
 
 	// sacado de aquí: https://docs.opencv.org/3.4/d0/d49/tutorial_moments.html
 	vector<Moments> mu(contours.size() );
-	for( size_t i = 0; i < contours.size(); i++ )
-	{
-		mu[i] = moments( contours[i] );
+
+	vector<vector<float>> ret(contours.size());
+	for( size_t i = 0; i < contours.size(); i++ ) {
+		mu[i] = moments( contours[i], true );
 	}
 
-	for( size_t i = 0; i < contours.size(); i++ )
-	{
-		cout << "CONTORNO " << i << endl;
-		cout << "Area: "<<  std::fixed << std::setprecision(2) << mu[i].m00 << endl;
-		cout << "Perímetro: " << arcLength( contours[i], true ) << endl;
+	for( size_t i = 0; i < contours.size(); i++ ) {
 		double hu[7];
 		HuMoments(mu[i],hu);
-		cout << "Momento 0: " << hu[0] << endl;
-		cout << "Momento 1: " << hu[1] << endl;
-		cout << "Momento 2: " << hu[2] << endl << endl;
+
+		ret[i].resize(5);
+		ret[i][0] = mu[i].m00;
+		ret[i][1] = arcLength( contours[i], true );
+		ret[i][2] = hu[0];
+		ret[i][3] = hu[1];
+		ret[i][4] = hu[2];
 	}
+
+	return ret;
+}
+
+// comparison function object
+bool compareContourAreas ( std::vector<cv::Point> contour1, std::vector<cv::Point> contour2 ) {
+    double i = fabs( contourArea(cv::Mat(contour1)) );
+    double j = fabs( contourArea(cv::Mat(contour2)) );
+    return ( i > j );
 }
 
 void aprender (String imagen, String objeto) {
@@ -100,36 +134,163 @@ void aprender (String imagen, String objeto) {
 		Mat image;
 		image = imread(imagen, CV_LOAD_IMAGE_COLOR);
 		checkImg(image);
-		imshow("Display window", image );
-		waitKey(0);
-		cvDestroyWindow("Display window");
 
 		image = toBinaryOtsu(image);
 
-		Mat draw_contours = Mat::zeros( image.size(), CV_8UC3 );
 		std::vector<std::vector<Point>> contours;
 		std::vector<Vec4i> hierarchy;
 
-		int mode = CV_RETR_TREE;
-		int method = CV_CHAIN_APPROX_NONE;
+		int mode = CONT_MODE;
+		int method = CONT_METH;
 
 		cv::findContours(image, contours, hierarchy, mode, method);
-		drawContours(draw_contours,contours,0, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
-		imshow("Contours", draw_contours);
-		waitKey(0);
+//		Mat drawCont = drawableContours(contours, image.size());
+//		imshow("Contours", drawCont);
+//		waitKey(0);
+		if (contours.size() > 1) std::sort(contours.begin(), contours.end(), compareContourAreas);
 
-		// calcular media y varianza por el blob
-		Scalar mean,dev;
-		meanStdDev(draw_contours,mean,dev);
-		cout << objeto << ": media " << mean << " stddev " << dev << endl;
+		// calcular parametros
+		vector<vector<float>> params = calculateParameters(contours);
 
 		//escribir en fichero
 		ofstream salida;
-		salida.open("files/objetos.txt", ios::out | ios::app );
-		salida << objeto << " " << mean[0] << " " << mean[1] << " " << dev[0] << " " << dev[1] << endl;
+		salida.open(FILE_ITEMS, ios::out | ios::app );
+		salida << objeto << " " << params[0][0] << " " << params[0][1] << " "
+								<< params[0][2] << " " << params[0][3] << " "
+								<< params[0][4] << endl;
 		salida.close();
 
 	}
+}
+
+double mahalanobis(vector<Point> cnt, Fig f) {
+
+	double perimeter = arcLength(cnt, true);
+	Moments m = moments(cnt, true);
+	double hu[7];
+	HuMoments(m, hu);
+	double area = m.m00;
+
+	double d;
+	d  = pow((area - f.mean_area), 2) / f.std_area;
+	d += pow((perimeter - f.mean_perim), 2)	/ f.std_perim;
+	d += pow((hu[0] - f.mean_m0), 2) / f.std_m0;
+	d += pow((hu[1] - f.mean_m1), 2) / f.std_m1;
+	d += pow((hu[2] - f.mean_m2), 2) / f.std_m2;
+
+	return d;
+}
+
+Fig getFigura(String nombre, vector<vector<float>> samples) {
+	Fig f;
+		int N = samples.size();
+		vector<vector<float>> all_params(N); // area, perim, m0, m1 ,m2
+		for (vector<float> v : samples) {
+			for (int i = 0; i < 5; i++) {
+				all_params[i].push_back(v[i]);
+			}
+		}
+
+		vector<float> final_params(10);
+
+		for (int i = 0; i < 5; i++) {
+			double sum = std::accumulate(all_params[i].begin(), all_params[i].end(), 0.0);
+			double mean = sum / all_params[i].size();
+
+			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
+			double stdev = std::sqrt(sq_sum / all_params[i].size() - mean * mean);
+
+			double prioriDev = pow(mean*0.1, 2);
+			stdev = (prioriDev/(double)N) + (((N - 1)/(double)N) * stdev);
+
+			final_params[i] = mean;
+			final_params[i+5] = stdev;
+		}
+
+		f.mean_area = final_params[0];
+		f.mean_perim = final_params[1];
+		f.mean_m0 = final_params[2];
+		f.mean_m1 = final_params[3];
+		f.mean_m2 = final_params[4];
+
+		f.std_area = final_params[5];
+		f.std_perim = final_params[6];
+		f.std_m0 = final_params[7];
+		f.std_m1 = final_params[8];
+		f.std_m2 = final_params[9];
+
+		f.nombre = nombre;
+
+		return f;
+}
+
+vector<Fig> modelo () {
+	ifstream input;
+	input.open(FILE_ITEMS, ios::in | ios::app );
+	vector<vector<float>> circulo, vagon, rectangulo, triangulo, rueda;
+
+	std::string nombre;
+	vector<float> data(5);
+	input >> nombre >> data[0] >> data[1] >> data[2] >> data[3] >> data[4];
+		if(nombre == "vagon")
+			vagon.push_back(data);
+		else if(nombre == "circulo")
+			circulo.push_back(data);
+		else if(nombre == "triangulo")
+			triangulo.push_back(data);
+		else if(nombre == "rueda")
+			rueda.push_back(data);
+		else if(nombre == "rectangulo")
+			rectangulo.push_back(data);
+
+	while(!input.eof()) {
+		std::string nombre;
+		vector<float> data(5);
+		input >> nombre >> data[0] >> data[1] >> data[2] >> data[3] >> data[4];
+			if(nombre == "vagon")
+				vagon.push_back(data);
+			else if(nombre == "circulo")
+				circulo.push_back(data);
+			else if(nombre == "triangulo")
+				triangulo.push_back(data);
+			else if(nombre == "rueda")
+				rueda.push_back(data);
+			else if(nombre == "rectangulo")
+				rectangulo.push_back(data);
+	}
+
+	Fig rect = getFigura("rectangulo", rectangulo);
+	Fig circ = getFigura("circulo", circulo);
+	Fig vag = getFigura("vagon", vagon);
+	Fig rued = getFigura("rueda", rueda);
+	Fig tria = getFigura("triangulo", triangulo);
+
+	vector<Fig> figuras = {rect, circ, vag, rued, tria};
+
+	return figuras;
+
+}
+
+vector<String> reconocer(String file, vector<Fig> clases) {
+	Mat image;
+	image = imread(file, CV_LOAD_IMAGE_COLOR);
+	checkImg(image);
+
+	image = toBinaryOtsu(image);
+
+	std::vector<std::vector<Point>> contours;
+	cv::findContours(image, contours, noArray(), CONT_MODE, CONT_METH);
+
+	vector<String> ret;
+	for (vector<Point> bolb : contours) {
+		for (Fig f: clases) {
+			double d = mahalanobis(bolb, f);
+			if ( d < CHI_TEST)
+				ret.push_back(f.nombre);
+		}
+	}
+
+	return ret;
 }
 
 
