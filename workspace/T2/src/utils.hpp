@@ -78,13 +78,13 @@ Mat toBinaryAdapt(Mat &img, int maxval, int type, int method, int blocksize, int
 	return ret;
 }
 
-Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> size) {
+Mat drawableContours(std::vector<std::vector<Point>> &contours, std::vector<Vec4i> hierarchy, cv::Size_<int> size) {
 	Mat ret = Mat::zeros( size, CV_8UC3 );
 	RNG rng(12345);
 
 	for( int i = 0; i< (int)contours.size(); i++ ) {
 		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-		cv::drawContours( ret, contours, i, color,-1,8,noArray(), 2, Point() );
+		cv::drawContours( ret, contours, i, color,-1,1, hierarchy, 0, Point());
 	}
 	return ret;
 }
@@ -144,9 +144,6 @@ void aprender (String imagen, String objeto) {
 		int method = CONT_METH;
 
 		cv::findContours(image, contours, hierarchy, mode, method);
-//		Mat drawCont = drawableContours(contours, image.size());
-//		imshow("Contours", drawCont);
-//		waitKey(0);
 		if (contours.size() > 1) std::sort(contours.begin(), contours.end(), compareContourAreas);
 
 		// calcular parametros
@@ -178,7 +175,7 @@ double mahalanobis(vector<Point> cnt, Fig f) {
 	d += pow((hu[1] - f.mean_m1), 2) / f.std_m1;
 	d += pow((hu[2] - f.mean_m2), 2) / f.std_m2;
 
-	return d;
+	return sqrt(d);
 }
 
 Fig getFigura(String nombre, vector<vector<float>> samples) {
@@ -198,9 +195,9 @@ Fig getFigura(String nombre, vector<vector<float>> samples) {
 			double mean = sum / all_params[i].size();
 
 			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
-			double stdev = std::sqrt(sq_sum / all_params[i].size() - mean * mean);
+			double stdev = std::sqrt(sq_sum / (double)all_params[i].size() - mean * mean);
 
-			double prioriDev = pow(mean*0.1, 2);
+			double prioriDev = pow(mean*0.01, 2);
 			stdev = (prioriDev/(double)N) + (((N - 1)/(double)N) * stdev);
 
 			final_params[i] = mean;
@@ -271,7 +268,13 @@ vector<Fig> modelo () {
 
 }
 
-vector<String> reconocer(String file, vector<Fig> clases) {
+static Scalar colours[5] = { Scalar(255,0,0),
+					  Scalar(0,255,0),
+					  Scalar(0,0,255),
+					  Scalar(255,255,0),
+					  Scalar(255,0,255) };
+
+vector<String> reconocer(String file, vector<Fig> clases, Mat &drawCont) {
 	Mat image;
 	image = imread(file, CV_LOAD_IMAGE_COLOR);
 	checkImg(image);
@@ -281,13 +284,26 @@ vector<String> reconocer(String file, vector<Fig> clases) {
 	std::vector<std::vector<Point>> contours;
 	cv::findContours(image, contours, noArray(), CONT_MODE, CONT_METH);
 
+	drawCont = Mat::zeros( image.size(), CV_8UC3 );
+
 	vector<String> ret;
+	int i = 0;
 	for (vector<Point> bolb : contours) {
+		int j = 0;
 		for (Fig f: clases) {
 			double d = mahalanobis(bolb, f);
-			if ( d < CHI_TEST)
+			//std::cout << i  << " " << f.nombre << " " << d << std::endl;
+			if ( d < CHI_TEST) {
 				ret.push_back(f.nombre);
+				cv::drawContours( drawCont, contours, i, colours[j],-1,1, noArray(), 0, Point());
+				break;
+			} else {
+				if (j == 4)
+					cv::drawContours( drawCont, contours, i, Scalar(125,125,125),-1,1, noArray(), 0, Point());
+			}
+			j++;
 		}
+		i++;
 	}
 
 	return ret;
