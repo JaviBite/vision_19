@@ -28,6 +28,7 @@ const float CHI_TEST = 11.07;		//m = 5, 0.05
 
 static const int CONT_MODE = CV_RETR_TREE;
 static const int CONT_METH = CV_CHAIN_APPROX_NONE;
+static const bool REGULARIZATION = true;
 
 
 int histSize = 256; //from 0 to 255
@@ -175,12 +176,12 @@ double mahalanobis(vector<Point> cnt, Fig f) {
 	d += pow((hu[1] - f.mean_m1), 2) / f.std_m1;
 	d += pow((hu[2] - f.mean_m2), 2) / f.std_m2;
 
-	return sqrt(d);
+	return d;
 }
 
 Fig getFigura(String nombre, vector<vector<float>> samples) {
 	Fig f;
-		int N = samples.size();
+		double N = samples.size();
 		vector<vector<float>> all_params(N); // area, perim, m0, m1 ,m2
 		for (vector<float> v : samples) {
 			for (int i = 0; i < 5; i++) {
@@ -191,17 +192,27 @@ Fig getFigura(String nombre, vector<vector<float>> samples) {
 		vector<float> final_params(10);
 
 		for (int i = 0; i < 5; i++) {
-			double sum = std::accumulate(all_params[i].begin(), all_params[i].end(), 0.0);
-			double mean = sum / all_params[i].size();
+			Scalar means, stddevs;
+			cv::meanStdDev(all_params[i], means, stddevs );
 
-			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
-			double stdev = std::sqrt(sq_sum / (double)all_params[i].size() - mean * mean);
+			double mean, stddev, var_n, var_n1, stdstd;
 
-			double prioriDev = pow(mean*0.01, 2);
-			stdev = (prioriDev/(double)N) + (((N - 1)/(double)N) * stdev);
+			mean = means.val[0];
+			stddev = stddevs.val[0];
+
+			var_n = stddev * stddev;
+			var_n1 = stddev * stddev * N / (N - 1);
+
+			if (REGULARIZATION) {
+				//Regularization
+				double prioriDev = pow(mean * 0.1, 2);
+				stdstd = (prioriDev / N) + var_n;
+			} else {
+				stdstd = var_n1;
+			}
 
 			final_params[i] = mean;
-			final_params[i+5] = stdev;
+			final_params[i+5] = stdstd;
 		}
 
 		f.mean_area = final_params[0];
