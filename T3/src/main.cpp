@@ -14,7 +14,7 @@ using namespace std;
 
 
 int main(int argc, char *argv[]) {
-	if (strcmp(argv[1], "muestra") == 0) {
+	if (strcmp(argv[1], "1") == 0) {
 		Mat image;
 		image = imread("files/imagenesT2/reco1.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
 		checkImg(image);
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
 		std::cout << "--------------------------------------" << std::endl;
 	}
-	else if (strcmp(argv[1], "aprender") == 0) {
+	else if (strcmp(argv[1], "2") == 0) {
 		if (argc >= 4) {
 			aprender(argv[2], argv[3]);
 		}
@@ -190,10 +190,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	else {
-		std::cout << "Usage: " << argv[0] << " <muestra | aprender | reconocer> [fichero] [nombreObjeto]" << std::endl;
-		std::cout << "\t muestra : Puntos del 1 al 3" << std::endl;
-		std::cout << "\t aprender [fichero] [nombreObjeto]: Aprender todos las figuras o si hay argumentos, la muestra indicada" << std::endl;
-		std::cout << "\t muestra [fichero] : Reconoce los tres ficheros, o si hay argumento, el indicado" << std::endl;
+		std::cout << "Usage: " << argv[0] << " <1 | 2> " << std::endl;
+		std::cout << "\t 1 : Gradiente, módulo y orientación" << std::endl;
+		std::cout << "\t 2 : Detección del punto central" << std::endl;
 	}
     return 0;
 }
