@@ -28,6 +28,7 @@ const float CHI_TEST = 11.07;		//m = 5, 0.05
 
 static const int CONT_MODE = CV_RETR_TREE;
 static const int CONT_METH = CV_CHAIN_APPROX_NONE;
+static const bool REGULARIZATION = true;
 
 
 int histSize = 256; //from 0 to 255
@@ -78,13 +79,13 @@ Mat toBinaryAdapt(Mat &img, int maxval, int type, int method, int blocksize, int
 	return ret;
 }
 
-Mat drawableContours(std::vector<std::vector<Point>> &contours, cv::Size_<int> size) {
+Mat drawableContours(std::vector<std::vector<Point>> &contours, std::vector<Vec4i> hierarchy, cv::Size_<int> size) {
 	Mat ret = Mat::zeros( size, CV_8UC3 );
 	RNG rng(12345);
 
 	for( int i = 0; i< (int)contours.size(); i++ ) {
 		Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-		cv::drawContours( ret, contours, i, color,-1,8,noArray(), 2, Point() );
+		cv::drawContours( ret, contours, i, color,-1,1, hierarchy, 0, Point());
 	}
 	return ret;
 }
@@ -144,9 +145,6 @@ void aprender (String imagen, String objeto) {
 		int method = CONT_METH;
 
 		cv::findContours(image, contours, hierarchy, mode, method);
-//		Mat drawCont = drawableContours(contours, image.size());
-//		imshow("Contours", drawCont);
-//		waitKey(0);
 		if (contours.size() > 1) std::sort(contours.begin(), contours.end(), compareContourAreas);
 
 		// calcular parametros
@@ -183,7 +181,7 @@ double mahalanobis(vector<Point> cnt, Fig f) {
 
 Fig getFigura(String nombre, vector<vector<float>> samples) {
 	Fig f;
-		int N = samples.size();
+		double N = samples.size();
 		vector<vector<float>> all_params(N); // area, perim, m0, m1 ,m2
 		for (vector<float> v : samples) {
 			for (int i = 0; i < 5; i++) {
@@ -194,17 +192,27 @@ Fig getFigura(String nombre, vector<vector<float>> samples) {
 		vector<float> final_params(10);
 
 		for (int i = 0; i < 5; i++) {
-			double sum = std::accumulate(all_params[i].begin(), all_params[i].end(), 0.0);
-			double mean = sum / all_params[i].size();
+			Scalar means, stddevs;
+			cv::meanStdDev(all_params[i], means, stddevs );
 
-			double sq_sum = std::inner_product(all_params[i].begin(), all_params[i].end(), all_params[i].begin(), 0.0);
-			double stdev = std::sqrt(sq_sum / all_params[i].size() - mean * mean);
+			double mean, stddev, var_n, var_n1, stdstd;
 
-			double prioriDev = pow(mean*0.1, 2);
-			stdev = (prioriDev/(double)N) + (((N - 1)/(double)N) * stdev);
+			mean = means.val[0];
+			stddev = stddevs.val[0];
+
+			var_n = stddev * stddev;
+			var_n1 = stddev * stddev * N / (N - 1);
+
+			if (REGULARIZATION) {
+				//Regularization
+				double prioriDev = pow(mean * 0.1, 2);
+				stdstd = (prioriDev / N) + var_n;
+			} else {
+				stdstd = var_n1;
+			}
 
 			final_params[i] = mean;
-			final_params[i+5] = stdev;
+			final_params[i+5] = stdstd;
 		}
 
 		f.mean_area = final_params[0];
@@ -271,7 +279,13 @@ vector<Fig> modelo () {
 
 }
 
-vector<String> reconocer(String file, vector<Fig> clases) {
+static Scalar colours[5] = { Scalar(255,0,0),
+					  Scalar(0,255,0),
+					  Scalar(0,0,255),
+					  Scalar(255,255,0),
+					  Scalar(255,0,255) };
+
+vector<String> reconocer(String file, vector<Fig> clases, Mat &drawCont) {
 	Mat image;
 	image = imread(file, CV_LOAD_IMAGE_COLOR);
 	checkImg(image);
@@ -281,13 +295,26 @@ vector<String> reconocer(String file, vector<Fig> clases) {
 	std::vector<std::vector<Point>> contours;
 	cv::findContours(image, contours, noArray(), CONT_MODE, CONT_METH);
 
+	drawCont = Mat::zeros( image.size(), CV_8UC3 );
+
 	vector<String> ret;
+	int i = 0;
 	for (vector<Point> bolb : contours) {
+		int j = 0;
 		for (Fig f: clases) {
 			double d = mahalanobis(bolb, f);
-			if ( d < CHI_TEST)
+			//std::cout << i  << " " << f.nombre << " " << d << std::endl;
+			if ( d < CHI_TEST) {
 				ret.push_back(f.nombre);
+				cv::drawContours( drawCont, contours, i, colours[j],-1,1, noArray(), 0, Point());
+				break;
+			} else {
+				if (j == 4)
+					cv::drawContours( drawCont, contours, i, Scalar(125,125,125),-1,1, noArray(), 0, Point());
+			}
+			j++;
 		}
+		i++;
 	}
 
 	return ret;

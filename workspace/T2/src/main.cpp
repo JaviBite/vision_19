@@ -6,13 +6,14 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 
 using namespace cv;
 using namespace std;
 
 
-int main(int, char *argv[]) {
+int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "muestra") == 0) {
 		Mat image;
 		image = imread("files/imagenesT2/reco1.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
@@ -45,7 +46,7 @@ int main(int, char *argv[]) {
 
 		//Point 2: Contours
 
-		image = imread("files/imagenesT2/reco3.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
+		image = imread("files/imagenesT2/reco1.pgm", CV_LOAD_IMAGE_COLOR);   // Read the file
 		checkImg(image);
 
 		imshow("Display window", image );                   // Show our image inside it.
@@ -53,22 +54,17 @@ int main(int, char *argv[]) {
 
 		image = toBinaryOtsu(image);
 
-		int morph_size = 1;
-		Mat element = getStructuringElement(MORPH_RECT, Size(2*morph_size + 1, 2*morph_size+1),
-					Point(morph_size, morph_size));
+//		int morph_size = 1;
+//		Mat element = getStructuringElement(MORPH_RECT, Size(2*morph_size + 1, 2*morph_size+1),
+//					Point(morph_size, morph_size));
 		std::vector<std::vector<Point>> contours;
 		std::vector<Vec4i> hierarchy;
 
-		morphologyEx(image, image, MORPH_CLOSE, element);
+		//morphologyEx(image, image, MORPH_CLOSE, element);
 		cv::findContours(image, contours, hierarchy,CONT_MODE, CONT_METH);
 		std::sort(contours.begin(), contours.end(), compareContourAreas);
-	//	for( size_t i = 0; i < contours.size(); i++ )
-	//	{
-	//		drawContours(draw_contours,contours,i, Scalar(255,50,50),-1,8,noArray(), 2, Point() );
-	//		imshow("Contours", draw_contours);
-	//		waitKey(0);
-	//	}
-		Mat drawCont = drawableContours(contours, image.size());
+
+		Mat drawCont = drawableContours(contours, hierarchy, image.size());
 		imshow("Contours", drawCont);
 		waitKey(0);
 
@@ -91,38 +87,43 @@ int main(int, char *argv[]) {
 		std::cout << "--------------------------------------" << std::endl;
 	}
 	else if (strcmp(argv[1], "aprender") == 0) {
+		if (argc >= 4) {
+			aprender(argv[2], argv[3]);
+		}
+		else {
 
-		// Punto 4 y 5: Aprendizaje supervisado y Regularización
+			// Punto 4 y 5: Aprendizaje supervisado y Regularización
 
-		aprender("files/imagenesT2/circulo1.pgm","circulo");
-		aprender("files/imagenesT2/circulo2.pgm","circulo");
-		aprender("files/imagenesT2/circulo3.pgm","circulo");
-		aprender("files/imagenesT2/circulo4.pgm","circulo");
-		aprender("files/imagenesT2/circulo5.pgm","circulo");
+			aprender("files/imagenesT2/circulo1.pgm","circulo");
+			aprender("files/imagenesT2/circulo2.pgm","circulo");
+			aprender("files/imagenesT2/circulo3.pgm","circulo");
+			aprender("files/imagenesT2/circulo4.pgm","circulo");
+			aprender("files/imagenesT2/circulo5.pgm","circulo");
 
-		aprender("files/imagenesT2/rectangulo1.pgm","rectangulo");
-		aprender("files/imagenesT2/rectangulo2.pgm","rectangulo");
-		aprender("files/imagenesT2/rectangulo3.pgm","rectangulo");
-		aprender("files/imagenesT2/rectangulo4.pgm","rectangulo");
-		aprender("files/imagenesT2/rectangulo5.pgm","rectangulo");
+			aprender("files/imagenesT2/rectangulo1.pgm","rectangulo");
+			aprender("files/imagenesT2/rectangulo2.pgm","rectangulo");
+			aprender("files/imagenesT2/rectangulo3.pgm","rectangulo");
+			aprender("files/imagenesT2/rectangulo4.pgm","rectangulo");
+			aprender("files/imagenesT2/rectangulo5.pgm","rectangulo");
 
-		aprender("files/imagenesT2/triangulo1.pgm","triangulo");
-		aprender("files/imagenesT2/triangulo2.pgm","triangulo");
-		aprender("files/imagenesT2/triangulo3.pgm","triangulo");
-		aprender("files/imagenesT2/triangulo4.pgm","triangulo");
-		aprender("files/imagenesT2/triangulo5.pgm","triangulo");
+			aprender("files/imagenesT2/triangulo1.pgm","triangulo");
+			aprender("files/imagenesT2/triangulo2.pgm","triangulo");
+			aprender("files/imagenesT2/triangulo3.pgm","triangulo");
+			aprender("files/imagenesT2/triangulo4.pgm","triangulo");
+			aprender("files/imagenesT2/triangulo5.pgm","triangulo");
 
-		aprender("files/imagenesT2/vagon1.pgm","vagon");
-		aprender("files/imagenesT2/vagon2.pgm","vagon");
-		aprender("files/imagenesT2/vagon3.pgm","vagon");
-		aprender("files/imagenesT2/vagon4.pgm","vagon");
-		aprender("files/imagenesT2/vagon5.pgm","vagon");
+			aprender("files/imagenesT2/vagon1.pgm","vagon");
+			aprender("files/imagenesT2/vagon2.pgm","vagon");
+			aprender("files/imagenesT2/vagon3.pgm","vagon");
+			aprender("files/imagenesT2/vagon4.pgm","vagon");
+			aprender("files/imagenesT2/vagon5.pgm","vagon");
 
-		aprender("files/imagenesT2/rueda1.pgm","rueda");
-		aprender("files/imagenesT2/rueda2.pgm","rueda");
-		aprender("files/imagenesT2/rueda3.pgm","rueda");
-		aprender("files/imagenesT2/rueda4.pgm","rueda");
-		aprender("files/imagenesT2/rueda5.pgm","rueda");
+			aprender("files/imagenesT2/rueda1.pgm","rueda");
+			aprender("files/imagenesT2/rueda2.pgm","rueda");
+			aprender("files/imagenesT2/rueda3.pgm","rueda");
+			aprender("files/imagenesT2/rueda4.pgm","rueda");
+			aprender("files/imagenesT2/rueda5.pgm","rueda");
+		}
 
 		std::cout << "DONE!" << std::endl;
 
@@ -134,57 +135,65 @@ int main(int, char *argv[]) {
 		vector<Fig> figuras = modelo();
 
 		for (Fig f: figuras) {
-			std::cout << "Figura = " << f.nombre << std::endl;
-			std::cout << "MEAN AREA = " << f.mean_area << std::endl;
-			std::cout << "MEAN PERIM = " << f.mean_perim << std::endl;
-			std::cout << "MEAN M0 = " << f.mean_m0 << std::endl;
-			std::cout << "MEAN M1 = " << f.mean_m1 << std::endl;
-			std::cout << "MEAN M2 = " << f.mean_m2 << std::endl;
-			std::cout << "STD AREA = " << f.std_area << std::endl;
-			std::cout << "STD PERIM = " << f.std_perim << std::endl;
-			std::cout << "STD M0 = " << f.std_m0 << std::endl;
-			std::cout << "STD M1 = " << f.std_m1 << std::endl;
-			std::cout << "STD M2 = " << f.std_m2 << std::endl << std::endl;
+						std::cout << "Figura = " << f.nombre << std::endl;
+						std::cout << "MEAN AREA = " << f.mean_area << std::endl;
+						std::cout << "MEAN PERIM = " << f.mean_perim << std::endl;
+						std::cout << "MEAN M0 = " << f.mean_m0 << std::endl;
+						std::cout << "MEAN M1 = " << f.mean_m1 << std::endl;
+						std::cout << "MEAN M2 = " << f.mean_m2 << std::endl;
+						std::cout << "STD AREA = " << f.std_area << std::endl;
+						std::cout << "STD PERIM = " << f.std_perim << std::endl;
+						std::cout << "STD M0 = " << f.std_m0 << std::endl;
+						std::cout << "STD M1 = " << f.std_m1 << std::endl;
+						std::cout << "STD M2 = " << f.std_m2 << std::endl << std::endl;
+					}
+
+		std::cout << "Código identificación: " << std::endl;
+		for (int i = 0; i < (int)figuras.size() ; i++) {
+			std::cout << std::setw(10) <<  figuras[i].nombre << "\t" << colours[i] << std::endl;
+		}
+		std::cout << std::setw(10) << "Desconocido" << "\t" << Scalar(125,125,125) << std::endl;
+		std::cout << std::endl;
+
+		vector<String> files;
+
+		if (argc == 3) {
+			files.push_back(argv[2]);
+		}
+		else {
+
+			files.push_back("files/imagenesT2/reco1.pgm");
+			files.push_back("files/imagenesT2/reco2.pgm");
+			files.push_back("files/imagenesT2/reco3.pgm");
 		}
 
-		vector<String> files = {"files/imagenesT2/reco1.pgm",
-								"files/imagenesT2/reco2.pgm",
-								"files/imagenesT2/reco3.pgm"};
+			vector<String> ret;
+			Mat drawCont;
+			int i = 0;
+			for(String file: files) {
+				ret = reconocer(file, figuras, drawCont);
 
-		vector<String> ret;
-		for(String file: files) {
-			ret = reconocer(file, figuras);
+				Mat image = imread(file, CV_LOAD_IMAGE_COLOR);   // Read the file
+				checkImg(image);
 
-			Mat image = imread(file, CV_LOAD_IMAGE_COLOR);   // Read the file
-			checkImg(image);
+				imshow("Display window", image );
+				imshow("Contours", drawCont);
 
-			imshow("Display window", image );
-			image = toBinaryOtsu(image);
+				std::cout << "Figura " << i << " : ";
+				for(String s: ret) std::cout << s << ", ";
+				std::cout << std::endl;
 
-			int morph_size = 1;
-			Mat element = getStructuringElement(MORPH_RECT, Size(2*morph_size + 1, 2*morph_size+1),
-						Point(morph_size, morph_size));
-			std::vector<std::vector<Point>> contours;
-			std::vector<Vec4i> hierarchy;
-
-			morphologyEx(image, image, MORPH_CLOSE, element);
-			cv::findContours(image, contours, hierarchy,CONT_MODE, CONT_METH);
-			Mat drawCont = drawableContours(contours, image.size());
-			imshow("Contours", drawCont);
-
-			for(String s: ret) std::cout << s << "\t";
-			std::cout << std::endl;
-
-			waitKey(0);
-			cvDestroyWindow("Display window");
-			cvDestroyWindow("Contours");
+				waitKey(0);
+				cvDestroyWindow("Display window");
+				cvDestroyWindow("Contours");
+				i++;
+			}
 		}
-	}
 	else {
-		std::cout << "Usage: " << argv[0] << " <muestra | aprender | reconocer>" << std::endl;
+		std::cout << "Usage: " << argv[0] << " <muestra | aprender | reconocer> [fichero] [nombreObjeto]" << std::endl;
 		std::cout << "\t muestra : Puntos del 1 al 3" << std::endl;
-		std::cout << "\t aprender : Aprender todos las figuras" << std::endl;
-		std::cout << "\t muestra : Reconoce los tres ficheros" << std::endl;
+		std::cout << "\t aprender [fichero] [nombreObjeto]: Aprender todos las figuras o si hay argumentos, la muestra indicada" << std::endl;
+		std::cout << "\t muestra [fichero] : Reconoce los tres ficheros, o si hay argumento, el indicado" << std::endl;
 	}
     return 0;
 }
