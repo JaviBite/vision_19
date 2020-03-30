@@ -15,64 +15,79 @@ using namespace std;
 int gauss_k = 1;
 int gauss_s = 5;
 
-int sobel_k_size = 3;
-
 
 int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) {
 		Mat image;
-		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);   // Read the file
+		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);
 		checkImg(image);
 
 		// filtro gaussiano
 		GaussianBlur(image, image, Size2i(gauss_s,gauss_s), gauss_k, gauss_k, BORDER_DEFAULT);
 
-		imshow("Filtro gaussiano", image );                   // Show our image inside it.
+		imshow("Filtro gaussiano", image );
 		waitKey(0);
-		cvDestroyWindow("Filtro gaussiano");
 
+
+		// calcular gradiente horizontal
 		Mat sobelx;
-		Sobel(image, sobelx,CV_32F, 1, 0, 3);
+		Sobel(image, sobelx,CV_32F, 1, 0);
 
 		double minVal, maxVal;
-		minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
-		cout << "Gradiente vertical " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
-
+		minMaxLoc(sobelx, &minVal, &maxVal);
+		cout << "Gradiente vertical " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// dibujar gradiente horizontal
 		Mat drawx;
 		sobelx.convertTo(drawx, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Gradiente vertical", drawx );                   // Show our image inside it.
+		imshow("Gradiente vertical", drawx );
 		waitKey(0);
-		cvDestroyWindow("Gradiente vertical");
 
 
+		// calcular gradiente vertical
 		Mat sobely;
 		Sobel(image, sobely,CV_32F, 0, 1);
 
-		minMaxLoc(sobely, &minVal, &maxVal); //find minimum and maximum intensities
-		cout << "Gradiente horizontal (la coordenada y va hacia arriba)" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
-
+		minMaxLoc(sobely, &minVal, &maxVal);
+		cout << "Gradiente horizontal (la coordenada \"y\" va hacia arriba)" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// dibujar gradiente vertical
 		Mat drawy;
 		sobely.convertTo(drawy, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Gradiente horizontal", drawy );                   // Show our image inside it.
+		imshow("Gradiente horizontal", drawy );
 		waitKey(0);
-		cvDestroyWindow("Gradiente horizontal");
 
+
+
+		// calcular el módulo
 		Mat moduloaux = sobelx;
 		for (int i = 0; i< sobelx.rows; i++)
 			for (int j = 0; j< sobelx.cols; j++)
 				moduloaux.at<float>(i,j) = sqrt(pow(sobelx.at<float>(i,j),2) + pow(sobely.at<float>(i,j),2));
-		minMaxLoc(moduloaux, &minVal, &maxVal); //find minimum and maximum intensities
-		cout << "Modulo" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
-
+		minMaxLoc(moduloaux, &minVal, &maxVal);
+		cout << "Modulo" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// convertir módulo a rango [0,255] y dibujarlo
 		Mat modulo;
 		moduloaux.convertTo(modulo, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Modulo", modulo );                   // Show our image inside it.
+		imshow("Modulo", modulo );
 		waitKey(0);
-		cvDestroyWindow("Modulo");
 
+
+		// calcular la orientación
+		Mat orientacionaux = sobelx;
+		for (int i = 0; i< sobelx.rows; i++)
+			for (int j = 0; j< sobelx.cols; j++)
+				orientacionaux.at<float>(i,j) = atan2(sobely.at<float>(i,j) , sobelx.at<float>(i,j));
+		minMaxLoc(orientacionaux, &minVal, &maxVal);
+		cout << "Orientacion" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// convertir orientación a rango [0,255] y dibujarla
+		Mat orientacion;
+		orientacionaux.convertTo(orientacion, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+
+		imshow("Orientacion", orientacion );
+		waitKey(0);
+		destroyAllWindows();
 
 	}
 	else if (strcmp(argv[1], "2") == 0) {
