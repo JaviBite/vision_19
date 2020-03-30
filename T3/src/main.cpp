@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 		Sobel(image, sobely,CV_32F, 0, 1);
 
 		minMaxLoc(sobely, &minVal, &maxVal);
-		cout << "Gradiente horizontal (la coordenada \"y\" va hacia arriba)" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		cout << "Gradiente horizontal (la coordenada \"y\" va hacia abajo)" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 		// dibujar gradiente vertical
 		Mat drawy;
 		sobely.convertTo(drawy, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
