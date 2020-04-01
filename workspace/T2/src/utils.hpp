@@ -28,7 +28,7 @@ const float CHI_TEST = 11.07;		//m = 5, 0.05
 
 static const int CONT_MODE = CV_RETR_TREE;
 static const int CONT_METH = CV_CHAIN_APPROX_NONE;
-static const bool REGULARIZATION = true;
+static const bool REGULARIZATION = false;
 
 
 int histSize = 256; //from 0 to 255

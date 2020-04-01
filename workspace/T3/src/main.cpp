@@ -12,10 +12,6 @@
 using namespace cv;
 using namespace std;
 
-int gauss_k = 1;
-int gauss_s = 5;
-
-
 int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) {
 		Mat image;
@@ -91,6 +87,39 @@ int main(int argc, char *argv[]) {
 
 	}
 	else if (strcmp(argv[1], "2") == 0) {
+		 Mat src, dst, color_dst;
+		    if( argc != 2 || !(src=imread("files/ImagenesT3/pasillo2.pgm", 0)).data)
+		        return -1;
+
+		    //dst = modulo(src, true);
+		    Canny( src, dst, 50, 200, 3 );
+		    cvtColor( dst, color_dst, CV_GRAY2BGR );
+
+		    std::vector<Vec2f> lines, lines1, lines2;
+		    HoughLines( dst, lines, 1, CV_PI/180, 100 );
+
+		    splitLines(lines, lines1, lines2, 0.3);
+
+		    drawLines(color_dst, lines1, Scalar(255,0,0));
+		    drawLines(color_dst, lines2, Scalar(0,0,255));
+
+		    namedWindow( "Source", 1 );
+		    imshow( "Source", src );
+
+		    namedWindow( "Detected Lines", 1 );
+		    imshow( "Detected Lines", color_dst );
+
+		    Point fuge = fugePoint(lines1, lines2, 1);
+
+		    Mat fugeDraw = src;
+		    cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2);
+		    namedWindow( "Fuge point", 1 );
+		    imshow( "Fuge point", fugeDraw );
+
+		    std::cout << "Fuge point : " << fuge << std::endl;
+
+		    waitKey(0);
+		    return 0;
 
 		}
 	else {
