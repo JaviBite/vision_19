@@ -14,6 +14,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) {
+
 		Mat image;
 		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);
 		checkImg(image);
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 		imshow("Gradiente vertical", drawx );
 		waitKey(0);
-
+/*
 
 		// calcular gradiente vertical
 		Mat sobely;
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
 		imshow("Orientacion", orientacion );
 		waitKey(0);
 		destroyAllWindows();
-
+*/
 	}
 	else if (strcmp(argv[1], "2") == 0) {
 		 Mat src, dst, color_dst;
@@ -122,6 +123,72 @@ int main(int argc, char *argv[]) {
 		    return 0;
 
 		}
+	else if (strcmp(argv[1], "3") == 0){
+		char tipka;
+		Mat frame;
+		//--- INITIALIZE VIDEOCAPTURE
+		VideoCapture cap;
+		// open the default camera using default API
+		cap.open(0);
+		// OR advance usage: select any API backend
+		int deviceID = 0;             // 0 = open default camera
+		int apiID = cv::CAP_ANY;      // 0 = autodetect default API
+									  // open selected camera using selected API
+		cap.open(deviceID + apiID);
+		// check if we succeeded
+		if (!cap.isOpened()) {
+			cerr << "ERROR! Unable to open camera\n";
+			return -1;
+		}
+
+		for(;;){
+			// wait for a new frame from camera and store it into 'frame'
+			cap.read(frame);
+
+			if (frame.empty()) {
+				cerr << "ERROR! blank frame grabbed\n";
+				break;
+			}
+
+			Sleep(5); // Sleep is mandatory - for no leg!
+
+
+
+
+
+			Mat dst, color_dst;
+
+
+			Canny( frame, dst, 50, 200, 3 );
+			cvtColor( dst, color_dst, CV_GRAY2BGR );
+
+			std::vector<Vec2f> lines, lines1, lines2;
+			HoughLines( dst, lines, 1, CV_PI/180, 100 );
+
+			splitLines(lines, lines1, lines2, 0.3);
+
+			drawLines(color_dst, lines1, Scalar(255,0,0));
+			drawLines(color_dst, lines2, Scalar(0,0,255));
+
+			Point fuge = fugePoint(lines1, lines2, 1);
+
+			Mat fugeDraw = frame;
+			cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2);
+
+
+
+
+			imshow("CAMERA 1", fugeDraw);
+			//imshow("CAMERA 1", color_dst);
+
+			tipka = cv::waitKey(30);
+
+			if (tipka == 'q'){
+				break;
+			}
+
+		}
+	}
 	else {
 		std::cout << "Usage: " << argv[0] << " <1 | 2> " << std::endl;
 		std::cout << "\t 1 : Gradiente, módulo y orientación" << std::endl;
