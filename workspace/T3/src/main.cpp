@@ -107,31 +107,32 @@ int main(int argc, char *argv[]) {
 		waitKey(0);
 
 		// Calcular el módulo
-		Mat cmoduloaux = cannyx;
+		Mat cmoduloaux = cannyx.clone();
 		for (int i = 0; i< cannyx.rows; i++)
 			for (int j = 0; j< cannyx.cols; j++)
 				cmoduloaux.at<float>(i,j) = sqrt(pow(cannyx.at<float>(i,j),2) + pow(cannyy.at<float>(i,j),2));
 		minMaxLoc(cmoduloaux, &minVal, &maxVal);
 		cout << "Valores mínimos y máximos del módulo:" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 		// convertir módulo al tipo 8bits y dibujarlo
-		cmoduloaux.convertTo(cmoduloaux,CV_8U );
-		imshow("Modulo Canny", cmoduloaux );
+		Mat cmodulo;
+		cmoduloaux.convertTo(cmodulo, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+		imshow("Modulo Canny", cmodulo );
 		waitKey(0);
 
-/*
-		// calcular la orientación
-		Mat orientacionaux = sobelx;
-		for (int i = 0; i< sobelx.rows; i++)
-			for (int j = 0; j< sobelx.cols; j++)
-				orientacionaux.at<float>(i,j) = atan2(sobely.at<float>(i,j) , sobelx.at<float>(i,j));
-		minMaxLoc(orientacionaux, &minVal, &maxVal);
-		cout << "Orientacion" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
-		// convertir orientación a rango [0,255] y dibujarla
-		Mat orientacion;
-		orientacionaux.convertTo(orientacion, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Orientacion", orientacion );
-		waitKey(0);*/
+		// calcular la orientación
+		Mat corientacionaux = cannyx;
+		for (int i = 0; i< cannyx.rows; i++)
+			for (int j = 0; j< cannyx.cols; j++)
+				corientacionaux.at<float>(i,j) = atan2(cannyy.at<float>(i,j) , cannyx.at<float>(i,j));
+		minMaxLoc(corientacionaux, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos de la orientación: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// convertir orientación a rango [0,255] y dibujarla
+		Mat corientacion;
+		corientacionaux.convertTo(corientacion, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+
+		imshow("Orientacion Canny", corientacion );
+		waitKey(0);
 
 
 
