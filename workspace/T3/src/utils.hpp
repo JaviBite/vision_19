@@ -146,3 +146,71 @@ Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int pointSize) {
 
 	return mean_point;
 }
+
+double derivadaGaussiana(const int x, const int sigma){
+	return (-x/pow(sigma,2)) * exp(-pow(x,2)/(2*pow(sigma,2)));
+}
+
+double gaussiana(const int x, const double sigma) {
+	return (1/sqrt(2*CV_PI*pow(sigma,2)))*exp(-0.5*pow(x/sigma,2));
+}
+
+Mat pasarFiltro(Mat image, double kernel[], const int n, bool vertical){
+	Mat imageReturn = image.clone();
+	cout << "USANDO MÁSCARA: " << endl;
+	for(int i=0; i< n; i++){
+		cout << kernel[i] << " ";
+		if (vertical) cout << endl;
+	}
+	cout << endl << endl;
+
+	for (int i = 0; i< image.rows; i++){
+		for (int j = 0; j< image.cols; j++){
+			if (vertical && (i < n/2)) {
+				float result = 0;
+				for (int l = n/2-i; l<n; l++){
+					result += image.at<float>(i+l-n/2,j) * kernel[l];
+				}
+				imageReturn.at<float>(i,j) = result;
+			}
+			else if (vertical && (i > image.rows - n/2)){
+				float result = 0;
+				for (int l = 0; l < n/2 +image.rows - i; l++){
+					result += image.at<float>(i+l-n/2,j) * kernel[l];
+				}
+				imageReturn.at<float>(i,j) = result;
+			}
+			else if (!vertical && (j < n/2)){
+				float result = 0;
+				for (int l = n/2-j; l<n; l++){
+					result += image.at<float>(i,j+l-n/2) * kernel[l];
+				}
+				imageReturn.at<float>(i,j) = result;
+
+			}
+			else if (!vertical && (j > image.cols - n/2)){
+				float result = 0;
+				for (int l = 0; l < n/2 +image.cols - j; l++){
+					result += image.at<float>(i,j+l-n/2) * kernel[l];
+				}
+				imageReturn.at<float>(i,j) = result;
+			}
+			else{
+				// no está en los límites
+				float result = 0;
+				for (int l = 0; l<n; l++){
+					if (vertical) {
+						result += image.at<float>(i+l-n/2,j) * kernel[l];
+					}
+					else {
+						result += image.at<float>(i,j+l-n/2) * kernel[l];
+					}
+				}
+				imageReturn.at<float>(i,j) = result;
+			}
+
+		}
+	}
+
+	return imageReturn;
+}

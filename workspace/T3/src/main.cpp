@@ -12,6 +12,8 @@
 using namespace cv;
 using namespace std;
 
+const int sigmaCanny = 1;
+
 int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) {
 
@@ -19,10 +21,137 @@ int main(int argc, char *argv[]) {
 		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);
 		checkImg(image);
 
+		imshow("Original", image );
+		waitKey(0);
+		double minVal, maxVal;
+		minMaxLoc(image, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos de la imagen: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+
+		cout << endl << endl << "CANNY" << endl << endl;
+		// cambiar el tipo de la imagen para poder hacer operaciones con ella
+		image.convertTo(image, CV_32F);
+
+		// obtener el tamaño del kernel a partir de sigma
+		int n = sigmaCanny * 5;
+		if (n%2 == 0) n++;
+
+		double kernel[n];
+		double K1 = 0, K2 = 0;
+
+		// generar el primer kernel y pasarlo por la imagen (filtro gaussiano vertical)
+		Mat cannyx;
+		for (int i = 0; i<n; i++){
+			kernel[i] = gaussiana(i-(n/2),sigmaCanny);
+			if(kernel[i] > 0){
+				K1 += kernel[i];
+			}
+		}
+		cannyx = pasarFiltro(image,kernel,n,true);
+
+		minMaxLoc(cannyx, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos de la gaussiana: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+
+		// generar segundo kernel (derivada de la gaussiana) y pasarlo a la imagen
+		for (int i = 0; i<n; i++){
+			kernel[i] = derivadaGaussiana(i-(n/2),sigmaCanny);
+			if(kernel[i] > 0){
+				K2 += kernel[i];
+			}
+		}
+		cannyx = pasarFiltro(cannyx,kernel,n,false);
+		// dividir por los valores positivos
+		cannyx = cannyx / (K1*K2);
+
+		minMaxLoc(cannyx, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos del gradiente horizontal final: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		Mat cdrawx = cannyx;
+		cdrawx = cannyx / 2 + 128;
+		cdrawx.convertTo(cdrawx,CV_8U );
+		imshow("Gradiente horizontal Canny", cdrawx);
+		waitKey(0);
+
+
+		K1 = 0; K2 = 0;
+
+		// generar el primer kernel y pasarlo por la imagen (filtro de derivada de gaussiana vertical)
+		Mat cannyy;
+		for (int i = 0; i<n; i++){
+			kernel[i] = derivadaGaussiana(i-(n/2),sigmaCanny);
+			if(kernel[i] > 0){
+				K1 += kernel[i];
+			}
+		}
+		cannyy = pasarFiltro(image,kernel,n,true);
+
+		minMaxLoc(cannyx, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos de la derivada gaussiana: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+
+		// generar segundo kernel (gaussiana) y pasarlo a la imagen
+		for (int i = 0; i<n; i++){
+			kernel[i] = gaussiana(i-(n/2),sigmaCanny);
+			if(kernel[i] > 0){
+				K2 += kernel[i];
+			}
+		}
+		cannyy = pasarFiltro(cannyy,kernel,n,false);
+		// dividir por los valores positivos
+		cannyy = cannyy / (K1*K2);
+
+		minMaxLoc(cannyx, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos del gradiente vertical final: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+
+		Mat cdrawy = cannyy;
+		cdrawy = cannyy / 2 + 128;
+		cdrawy.convertTo(cdrawy,CV_8U );
+		imshow("Gradiente vertical Canny", cdrawy);
+		waitKey(0);
+
+		// Calcular el módulo
+		Mat cmoduloaux = cannyx;
+		for (int i = 0; i< cannyx.rows; i++)
+			for (int j = 0; j< cannyx.cols; j++)
+				cmoduloaux.at<float>(i,j) = sqrt(pow(cannyx.at<float>(i,j),2) + pow(cannyy.at<float>(i,j),2));
+		minMaxLoc(cmoduloaux, &minVal, &maxVal);
+		cout << "Valores mínimos y máximos del módulo:" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// convertir módulo al tipo 8bits y dibujarlo
+		cmoduloaux.convertTo(cmoduloaux,CV_8U );
+		imshow("Modulo Canny", cmoduloaux );
+		waitKey(0);
+
+/*
+		// calcular la orientación
+		Mat orientacionaux = sobelx;
+		for (int i = 0; i< sobelx.rows; i++)
+			for (int j = 0; j< sobelx.cols; j++)
+				orientacionaux.at<float>(i,j) = atan2(sobely.at<float>(i,j) , sobelx.at<float>(i,j));
+		minMaxLoc(orientacionaux, &minVal, &maxVal);
+		cout << "Orientacion" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		// convertir orientación a rango [0,255] y dibujarla
+		Mat orientacion;
+		orientacionaux.convertTo(orientacion, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+
+		imshow("Orientacion", orientacion );
+		waitKey(0);*/
+
+
+
+
+
+
+
+
+
+
+
+
+		cout << endl << endl << "SOBEL" << endl << endl;
+		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);
+		checkImg(image);
+
 		// filtro gaussiano
 		GaussianBlur(image, image, Size2i(gauss_s,gauss_s), gauss_k, gauss_k, BORDER_DEFAULT);
 
-		imshow("Filtro gaussiano", image );
+		imshow("Filtro gaussiano antes de Sobel", image );
 		waitKey(0);
 
 
@@ -30,28 +159,29 @@ int main(int argc, char *argv[]) {
 		Mat sobelx;
 		Sobel(image, sobelx,CV_32F, 1, 0);
 
-		double minVal, maxVal;
 		minMaxLoc(sobelx, &minVal, &maxVal);
-		cout << "Gradiente vertical " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		cout << "Valores mínimos y máximos del gradiente horizontal: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 		// dibujar gradiente horizontal
 		Mat drawx;
 		sobelx.convertTo(drawx, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Gradiente vertical", drawx );
+		imshow("Gradiente horizontal Sobel", drawx );
 		waitKey(0);
-/*
+
+
+
 
 		// calcular gradiente vertical
 		Mat sobely;
 		Sobel(image, sobely,CV_32F, 0, 1);
 
 		minMaxLoc(sobely, &minVal, &maxVal);
-		cout << "Gradiente horizontal (la coordenada \"y\" va hacia abajo)" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		cout << "Valores mínimos y máximos del gradiente horizontal: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 		// dibujar gradiente vertical
 		Mat drawy;
 		sobely.convertTo(drawy, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-		imshow("Gradiente horizontal", drawy );
+		imshow("Gradiente vertical Sobel (la coordenada \"y\" va hacia abajo)", drawy );
 		waitKey(0);
 
 
@@ -85,7 +215,7 @@ int main(int argc, char *argv[]) {
 		imshow("Orientacion", orientacion );
 		waitKey(0);
 		destroyAllWindows();
-*/
+
 	}
 	else if (strcmp(argv[1], "2") == 0) {
 		 Mat src, dst, color_dst;
