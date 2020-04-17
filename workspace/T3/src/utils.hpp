@@ -70,7 +70,7 @@ void splitLines(vector<Vec2f> lines, vector<Vec2f> &lines1, vector<Vec2f> &lines
 		float theta = line[1];
 
 		if (theta > thetaThresh && abs(theta - CV_PI) > thetaThresh && 		// Vertical
-			(abs(theta - CV_PI/2)) > thetaThresh) { 	// Total Horizontal
+			(abs(theta - CV_PI/2)) > thetaThresh/2) { 	// Total Horizontal
 
 			//std::cout << "heta " << theta << std::endl;
 			if (theta > CV_PI/2)
@@ -81,7 +81,7 @@ void splitLines(vector<Vec2f> lines, vector<Vec2f> &lines1, vector<Vec2f> &lines
 	}
 }
 
-Mat drawLines(Mat &draw, vector<Vec2f> lines, Scalar color) {
+Mat drawLines(Mat &draw, vector<Vec2f> lines, Scalar color, int y = 0) {
 	for( size_t i = 0; i < lines.size(); i++ ){
 		float rho = lines[i][0];
 		float theta = lines[i][1];
@@ -92,6 +92,12 @@ Mat drawLines(Mat &draw, vector<Vec2f> lines, Scalar color) {
 		Point pt2(cvRound(x0 - 1000*(-b)),
 				  cvRound(y0 - 1000*(a)));
 		line( draw, pt1, pt2, color, 3, 8 );
+	}
+
+	if (y > 0) {
+		Point2f om = Point2f(cvRound(0), cvRound(y/2));
+		Point2f pm = Point2f(cvRound(1000), cvRound(y/2));
+		line( draw, om, pm, Scalar(255,0,255), 3, 8 );
 	}
 	return draw;
 }
@@ -114,11 +120,15 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2, Point2f &r)
     return true;
 }
 
-Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int pointSize) {
+Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int N, int y = 0) {
 	vector<Point2f> votes;
 
-	int size = min(lines1.size(), lines2.size());
+	Point2f om = Point2f(cvRound(0), cvRound(y/2));
+	Point2f pm = Point2f(cvRound(1000), cvRound(y/2));
 
+	int size = min(lines1.size(), lines2.size());
+	if (size > N)
+		size = N;
 	for (int j = 0; j < size; j++) {
 		Vec2f l[2];
 		l[0] = lines1[j];
@@ -133,10 +143,21 @@ Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int pointSize) {
 			p[i] = Point2f(cvRound(x0 - 1000*(-b)), cvRound(y0 - 1000*(a)));
 		}
 
-
-		if(intersection(o[0], p[0], o[1], p[1], r)) {
-			votes.push_back(r);
+		if (y > 0) {
+			if(intersection(o[0], p[0], om, pm, r)) {
+				votes.push_back(r);
+			}
+			if(intersection(o[1], p[1], om, pm, r)) {
+				votes.push_back(r);
+			}
+		} else {
+			if(intersection(o[0], p[0], o[1], p[1], r)) {
+				votes.push_back(r);
+			}
 		}
+
+		if ((int)votes.size() < N/4)
+			return Point2f(0,0);
 	}
 
 //	for (auto v : votes) std::cout << "Point " << v << std::endl;
