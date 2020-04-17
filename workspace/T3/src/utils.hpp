@@ -120,14 +120,14 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2, Point2f &r)
     return true;
 }
 
-Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int N, int y = 0) {
+Point2f fugePoint(vector<Vec2f> lines1, vector<Vec2f> lines2, int N = 0, int y = 0) {
 	vector<Point2f> votes;
 
 	Point2f om = Point2f(cvRound(0), cvRound(y/2));
 	Point2f pm = Point2f(cvRound(1000), cvRound(y/2));
 
 	int size = min(lines1.size(), lines2.size());
-	if (size > N)
+	if (N > 0 && size > N)
 		size = N;
 	for (int j = 0; j < size; j++) {
 		Vec2f l[2];

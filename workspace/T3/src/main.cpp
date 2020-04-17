@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
 									  // open selected camera using selected API
 
 		if ( argc > 2 && argv[2] - '0' >= 0)
-			deviceID = argv[2] - '0';
+			deviceID = *argv[2] - '0';
 
 		cap.open(deviceID + apiID);
 		// check if we succeeded
@@ -286,6 +286,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		bool drawHLines = false;
+		bool darwCanny = false;
 
 		for(;;){
 			// wait for a new frame from camera and store it into 'frame'
@@ -298,10 +299,10 @@ int main(int argc, char *argv[]) {
 
 			Sleep(5); // Sleep is mandatory - for no leg!
 
-			Mat dst, color_dst;
+			Mat dst, color_dst, frame_gray;
 
-
-			Canny( frame, dst, 50, 200, 3 );
+			cvtColor( frame, frame_gray, CV_BGR2GRAY );
+			Canny( frame_gray, dst, 50, 200, 3 );
 			cvtColor( dst, color_dst, CV_GRAY2BGR );
 
 			std::vector<Vec2f> lines, lines1, lines2;
@@ -309,10 +310,7 @@ int main(int argc, char *argv[]) {
 
 			splitLines(lines, lines1, lines2, 0.3);
 
-			drawLines(color_dst, lines1, Scalar(255,0,0));
-			drawLines(color_dst, lines2, Scalar(0,0,255));
-
-			Point fuge = fugePoint(lines1, lines2, 5);
+			Point fuge = fugePoint(lines1, lines2, 0);
 
 			Mat fugeDraw = frame;
 
@@ -322,11 +320,20 @@ int main(int argc, char *argv[]) {
 				drawLines(fugeDraw, lines2, Scalar(0,0,255,150));
 			}
 
+
 			cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2, 30);
 
+			if (!darwCanny)
+				imshow("CAMERA 1", fugeDraw);
+			else {
+				if (drawHLines) {
+					drawLines(color_dst, lines1, Scalar(255,0,0));
+					drawLines(color_dst, lines2, Scalar(0,0,255));
+				}
+				imshow("CAMERA 1", color_dst);
+			}
 
-			imshow("CAMERA 1", fugeDraw);
-			//imshow("CAMERA 1", color_dst);
+
 
 			tipka = cv::waitKey(30);
 
@@ -335,6 +342,9 @@ int main(int argc, char *argv[]) {
 			}
 			else if (tipka == 'l') {
 				drawHLines = !drawHLines;
+			}
+			else if (tipka == 'c') {
+				darwCanny = !darwCanny;
 			}
 
 		}
