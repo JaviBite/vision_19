@@ -138,17 +138,6 @@ int main(int argc, char *argv[]) {
 		imshow("Orientacion Canny", corientacion );
 		waitKey(0);
 
-
-
-
-
-
-
-
-
-
-
-
 		cout << endl << endl << "SOBEL" << endl << endl;
 		image = imread("files/imagenesT3/poster.pgm", CV_LOAD_IMAGE_GRAYSCALE);
 		checkImg(image);
@@ -223,41 +212,61 @@ int main(int argc, char *argv[]) {
 
 	}
 	else if (strcmp(argv[1], "2") == 0) {
-		 Mat src, dst, color_dst;
-		    if( argc != 2 || !(src=imread("files/ImagenesT3/pasillo2.pgm", 0)).data)
+		vector<String> files;
+
+		files.push_back("files/ImagenesT3/pasillo1.pgm");
+		files.push_back("files/ImagenesT3/pasillo2.pgm");
+		files.push_back("files/ImagenesT3/pasillo3.pgm");
+
+		for (String file : files) {
+			Mat src, dst, color_dst;
+		    if(!(src=imread(file, 0)).data)
 		        return -1;
+
+		    int size_y = 0;
+
+		    if (argc > 2 && strcmp(argv[2], "horizontal") == 0) {
+				size_y = src.size[1];
+			}
 
 		    //dst = modulo(src, true);
 		    Canny( src, dst, 50, 200, 3 );
 		    cvtColor( dst, color_dst, CV_GRAY2BGR );
 
 		    std::vector<Vec2f> lines, lines1, lines2;
-		    HoughLines( dst, lines, 1, CV_PI/180, 100 );
+		    HoughLines( dst, lines, (double)1.0, (double)CV_PI/180.0, 100 );
 
 		    splitLines(lines, lines1, lines2, 0.3);
 
-		    drawLines(color_dst, lines1, Scalar(255,0,0));
+		    drawLines(color_dst, lines1, Scalar(255,0,0), size_y);
 		    drawLines(color_dst, lines2, Scalar(0,0,255));
 
-		    namedWindow( "Source", 1 );
-		    imshow( "Source", src );
-
-		    namedWindow( "Detected Lines", 1 );
 		    imshow( "Detected Lines", color_dst );
 
-		    Point fuge = fugePoint(lines1, lines2, 1);
+		    Point fuge = fugePoint(lines1, lines2, 1, size_y);
 
 		    Mat fugeDraw = src;
+		    cvtColor( fugeDraw, fugeDraw, CV_GRAY2BGR );
 		    cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2);
-		    namedWindow( "Fuge point", 1 );
+
 		    imshow( "Fuge point", fugeDraw );
 
-		    std::cout << "Fuge point : " << fuge << std::endl;
+		    std::cout << "File: " << file << " fuge point : " << fuge << std::endl;
 
-		    waitKey(0);
-		    return 0;
+		    char tipka = waitKey(0);
+
+		    if (tipka == 's')	{	//save images
+		    	imwrite( file + "_fuge.jpg", fugeDraw );
+		    	imwrite( file + "_lines.jpg", color_dst );
+		    };
+
+		    destroyWindow("Fuge point");
+		    destroyWindow("Detected Lines");
 
 		}
+		return 0;
+
+	}
 	else if (strcmp(argv[1], "3") == 0){
 		char tipka;
 		Mat frame;
@@ -269,12 +278,19 @@ int main(int argc, char *argv[]) {
 		int deviceID = 0;             // 0 = open default camera
 		int apiID = cv::CAP_ANY;      // 0 = autodetect default API
 									  // open selected camera using selected API
+
+		if ( argc > 2 && argv[2] - '0' >= 0)
+			deviceID = *argv[2] - '0';
+
 		cap.open(deviceID + apiID);
 		// check if we succeeded
 		if (!cap.isOpened()) {
 			cerr << "ERROR! Unable to open camera\n";
 			return -1;
 		}
+
+		bool drawHLines = false;
+		bool darwCanny = false;
 
 		for(;;){
 			// wait for a new frame from camera and store it into 'frame'
@@ -287,14 +303,10 @@ int main(int argc, char *argv[]) {
 
 			Sleep(5); // Sleep is mandatory - for no leg!
 
+			Mat dst, color_dst, frame_gray;
 
-
-
-
-			Mat dst, color_dst;
-
-
-			Canny( frame, dst, 50, 200, 3 );
+			cvtColor( frame, frame_gray, CV_BGR2GRAY );
+			Canny( frame_gray, dst, 50, 200, 3 );
 			cvtColor( dst, color_dst, CV_GRAY2BGR );
 
 			std::vector<Vec2f> lines, lines1, lines2;
@@ -302,24 +314,41 @@ int main(int argc, char *argv[]) {
 
 			splitLines(lines, lines1, lines2, 0.3);
 
-			drawLines(color_dst, lines1, Scalar(255,0,0));
-			drawLines(color_dst, lines2, Scalar(0,0,255));
-
-			Point fuge = fugePoint(lines1, lines2, 1);
+			Point fuge = fugePoint(lines1, lines2, 0);
 
 			Mat fugeDraw = frame;
-			cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2);
 
 
+			if (drawHLines) {
+				drawLines(fugeDraw, lines1, Scalar(255,0,0,150));
+				drawLines(fugeDraw, lines2, Scalar(0,0,255,150));
+			}
 
 
-			imshow("CAMERA 1", fugeDraw);
-			//imshow("CAMERA 1", color_dst);
+			cv::drawMarker(fugeDraw, fuge,  cv::Scalar(0, 0, 255), MARKER_CROSS, 10, 2, 30);
+
+			if (!darwCanny)
+				imshow("CAMERA 1", fugeDraw);
+			else {
+				if (drawHLines) {
+					drawLines(color_dst, lines1, Scalar(255,0,0));
+					drawLines(color_dst, lines2, Scalar(0,0,255));
+				}
+				imshow("CAMERA 1", color_dst);
+			}
+
+
 
 			tipka = cv::waitKey(30);
 
 			if (tipka == 'q'){
 				break;
+			}
+			else if (tipka == 'l') {
+				drawHLines = !drawHLines;
+			}
+			else if (tipka == 'c') {
+				darwCanny = !darwCanny;
 			}
 
 		}
@@ -327,7 +356,8 @@ int main(int argc, char *argv[]) {
 	else {
 		std::cout << "Usage: " << argv[0] << " <1 | 2> " << std::endl;
 		std::cout << "\t 1 : Gradiente, módulo y orientación" << std::endl;
-		std::cout << "\t 2 : Detección del punto central" << std::endl;
+		std::cout << "\t 2 [horizontal]: Detección del punto central" << std::endl;
+		std::cout << "\t 3 [cam_devide_id]: Detección del punto central en vivo" << std::endl;
 	}
     return 0;
 }
