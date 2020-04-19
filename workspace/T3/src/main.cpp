@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
 		minMaxLoc(cannyx, &minVal, &maxVal);
 		cout << "Valores mínimos y máximos del gradiente horizontal final: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
-		Mat cdrawx = cannyx;
+		Mat cdrawx = cannyx.clone();
 		cdrawx = cannyx / 2 + 128;
 		cdrawx.convertTo(cdrawx,CV_8U );
 		imshow("Gradiente horizontal Canny", cdrawx);
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 		}
 		cannyy = pasarFiltro(image,kernel,n,true);
 
-		minMaxLoc(cannyx, &minVal, &maxVal);
+		minMaxLoc(cannyy, &minVal, &maxVal);
 		cout << "Valores mínimos y máximos de la derivada gaussiana: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 
 		// generar segundo kernel (gaussiana) y pasarlo a la imagen
@@ -97,10 +97,10 @@ int main(int argc, char *argv[]) {
 		// dividir por los valores positivos
 		cannyy = cannyy / (K1*K2);
 
-		minMaxLoc(cannyx, &minVal, &maxVal);
+		minMaxLoc(cannyy, &minVal, &maxVal);
 		cout << "Valores mínimos y máximos del gradiente vertical final: " << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
 
-		Mat cdrawy = cannyy;
+		Mat cdrawy = cannyy.clone();
 		cdrawy = cannyy / 2 + 128;
 		cdrawy.convertTo(cdrawy,CV_8U );
 		imshow("Gradiente vertical Canny", cdrawy);
@@ -116,12 +116,16 @@ int main(int argc, char *argv[]) {
 		// convertir módulo al tipo 8bits y dibujarlo
 		Mat cmodulo;
 		cmoduloaux.convertTo(cmodulo, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+		minMaxLoc(cmodulo, &minVal, &maxVal);
+				cout << "Valores mínimos y máximos del módulo:" << endl << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl << endl;
+		//cmoduloaux.convertTo(cmodulo, CV_8U);
 		imshow("Modulo Canny", cmodulo );
 		waitKey(0);
 
 
+
 		// calcular la orientación
-		Mat corientacionaux = cannyx;
+		Mat corientacionaux = cannyx.clone();
 		for (int i = 0; i< cannyx.rows; i++)
 			for (int j = 0; j< cannyx.cols; j++)
 				corientacionaux.at<float>(i,j) = atan2(cannyy.at<float>(i,j) , cannyx.at<float>(i,j));
