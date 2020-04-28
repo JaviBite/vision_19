@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 // #include <iomanip>
 
 #define HAVE_OPENCV_XFEATURES2D
@@ -31,6 +32,7 @@ void help() {
 int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) { 	// @suppress("Invalid arguments")
 		std::vector<cv::String> files;
+		std::vector<std::vector<KeyPoint>> keypoints_lists;
 
 		files.push_back("files/panorama/out_1.jpg");
 		files.push_back("files/panorama/out_2.jpg");
@@ -45,8 +47,6 @@ int main(int argc, char *argv[]) {
 			checkImg(src_original);
 
 
-
-
 			//cv::cvtColor(src, src, CV_BGR2GRAY);
 
 		    //-- Step 1: Detect the keypoints using SURF Detector
@@ -57,18 +57,65 @@ int main(int argc, char *argv[]) {
 
 		    //-- Draw keypoints
 		    Mat img_keypoints;
-		    drawKeypoints( src, keypoints, img_keypoints ); // @suppress("Invalid arguments")
-
+		    cv::drawKeypoints( src, keypoints, img_keypoints ); // @suppress("Invalid arguments")
 
 		    //-- Show detected (drawn) keypoints
 		    imshow("SURF Keypoints", img_keypoints );
 		    waitKey();
-		    return 0;
 		}
+
+//		for (std::vector<KeyPoint> keyPointList : keypoints_lists) {
+//			for (std::vector<KeyPoint> keyPointList2 : keypoints_lists) {
+//				if (&keyPointList2 != &keyPointList) {
+//					Mat homography;
+//					homography = cv::findHomography(keyPointList, keyPointList2, CV_RANSAC, 3);
+//				}
+//			}
+//		}
 
 
 	}
 	else if (strcmp(argv[1], "2") == 0) { 	// @suppress("Invalid arguments")
+
+		int width = 640 * 3;
+		int height = 480 * 3;
+
+		std::list<cv::String> files;
+		files.push_back("files/panorama/out_1.jpg");
+		files.push_back("files/panorama/out_2.jpg");
+		files.push_back("files/panorama/out_3.jpg");
+		files.push_back("files/panorama/out_4.jpg");
+		files.push_back("files/panorama/out_5.jpg");
+
+		// Read in the image.
+		Mat im_1 = imread(files.back());
+		files.pop_back();
+
+		resize(im_1, im_1, Size(width, height));
+
+		translateImg(im_1, width/2, height/2); // 2000 is usual
+
+		namedWindow("translated 1st image", 0);
+		imshow("translated 1st image", im_1);
+		waitKey(0);
+
+		for (cv::String file : files) {
+			Mat im_2 = imread(file);
+			resize(im_2, im_2, Size(width, height));
+
+			warp_crops(im_1, im_2);
+
+			namedWindow("translated 1st image", 0);
+			imshow("translated 1st image", im_1);
+			waitKey(0);
+
+		}
+
+
+		std::cout << "Fin" << std::endl;
+		waitKey(0);
+
+		imwrite("result.jpg", im_1);
 
 		if (argc > 2 && strcmp(argv[2], "horizontal") == 0) { 	 	// @suppress("Invalid arguments")
 
