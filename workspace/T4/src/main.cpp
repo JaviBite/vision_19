@@ -5,6 +5,9 @@
 #include <iostream>
 #include <stdio.h>
 // #include <windows.h> // For Sleep
+#include <iostream>
+#include <stdio.h>
+#include <windows.h> // For Sleep
 #include "utils.hpp"
 #include <fstream>
 #include <string>
