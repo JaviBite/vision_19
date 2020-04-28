@@ -32,14 +32,20 @@ int main(int argc, char *argv[]) {
 	if (strcmp(argv[1], "1") == 0) { 	// @suppress("Invalid arguments")
 		std::vector<cv::String> files;
 
-		files.push_back("files/panorama/outdoors_1.jpeg");
-		files.push_back("files/panorama/outdoors_2.jpeg");
-		files.push_back("files/panorama/outdoors_3.jpeg");
+		files.push_back("files/panorama/out_1.jpg");
+		files.push_back("files/panorama/out_2.jpg");
+		files.push_back("files/panorama/out_3.jpg");
 
 		for (cv::String file : files) {
-			Mat src, dst, color_dst;
-			src = cv::imread(file, 0);	// @suppress("Invalid arguments")
-			checkImg(src);
+			Mat src, src_original, dst, color_dst;
+			src_original = cv::imread(file, 0);	// @suppress("Invalid arguments")
+
+			Size size(960,720);
+			resize(src_original,src,size);
+			checkImg(src_original);
+
+
+
 
 			//cv::cvtColor(src, src, CV_BGR2GRAY);
 
