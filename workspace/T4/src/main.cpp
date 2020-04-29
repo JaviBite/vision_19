@@ -30,6 +30,7 @@ void help() {
 }
 
 int main(int argc, char *argv[]) {
+
 	if (strcmp(argv[1], "1") == 0) { 	// @suppress("Invalid arguments")
 		std::vector<cv::String> files;
 		std::vector<std::vector<KeyPoint>> keypoints_lists;
@@ -75,10 +76,16 @@ int main(int argc, char *argv[]) {
 
 
 	}
-	else if (strcmp(argv[1], "2") == 0) { 	// @suppress("Invalid arguments")
 
-		int width = 640 * 3;
-		int height = 480 * 3;
+	else if (strcmp(argv[1], "2") == 0){	 	// @suppress("Invalid arguments")
+		int hom;
+		cout << "Formando panorama con 5 fotos, ¿ver emparejamientos? (1 -> si/ 0 -> no): ";
+		cin >> hom;
+
+		if (hom != 1 && hom != 0) hom = 0;
+
+		int width = 960;
+		int height = 720;
 
 		std::list<cv::String> files;
 		files.push_back("files/panorama/out_1.jpg");
@@ -93,37 +100,80 @@ int main(int argc, char *argv[]) {
 
 		resize(im_1, im_1, Size(width, height));
 
-		translateImg(im_1, width/2, height/2); // 2000 is usual
-
-		namedWindow("translated 1st image", 0);
-		imshow("translated 1st image", im_1);
-		waitKey(0);
+		int i = 1;
 
 		for (cv::String file : files) {
+			i++;
+
 			Mat im_2 = imread(file);
 			resize(im_2, im_2, Size(width, height));
 
-			warp_crops(im_1, im_2);
+			clock_t begin = clock();
+			im_1 = panorama(im_2, im_1, hom);
+			clock_t end = clock();
 
-			namedWindow("translated 1st image", 0);
-			imshow("translated 1st image", im_1);
+			cout << "Tiempo de CPU para " << i << " imágenes: " <<  double(end - begin) / CLOCKS_PER_SEC << " segundos" << endl;
+
+			namedWindow("Imagen panorámica", 0);
+			imshow("Imagen panorámica", im_1);
+
+			namedWindow("Imagen añadida", 0);
+			imshow("Imagen añadida", im_2);
 			waitKey(0);
+
 
 		}
 
 
 		std::cout << "Fin" << std::endl;
-		waitKey(0);
 
 		imwrite("result.jpg", im_1);
+	}
+	else if(strcmp(argv[1], "3") == 0) {
 
-		if (argc > 2 && strcmp(argv[2], "horizontal") == 0) { 	 	// @suppress("Invalid arguments")
+		Mat i1,frame;
+		namedWindow("Camara",1);
 
+		VideoCapture cap(0);
+
+		cout << "Presionar INTRO para capturar la primera imagen" << endl;
+
+		while(true){
+			cap >> frame;
+			flip(frame,frame,1);
+			imshow("Camara",frame);
+			if(waitKey(30) == 13){
+				break;
+			}
 		}
 
-	}
-	else if (strcmp(argv[1], "3") == 0){	 	// @suppress("Invalid arguments")
+		cap >> i1;
+		flip(i1,i1,1);
 
+		cout << "Presionar INTRO para capturar imagen" << endl;
+		cout << "Presionar ESCAPE para terminar" << endl;
+		while(true){
+			cap >> frame;
+			flip(frame,frame,1);
+			imshow("Camara",frame);
+			int wait = waitKey(20);
+			if(wait == 13){
+				cout << "Imagen tomada" << endl;
+				cap >> frame;
+				flip(frame,frame,1);
+				i1 = panorama(frame,i1,2);
+			}
+			if(wait == 27){
+				break;
+			}
+		}
+		destroyAllWindows();
+		cap.release();
+
+		imwrite("panorama_camara.jpg",i1);
+		imshow("Panorama", i1);
+		waitKey(0);
+		destroyAllWindows();
 	}
 
 	else {
