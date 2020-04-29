@@ -28,6 +28,29 @@ using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
 
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
 void checkImg(Mat img) {
 	if(!img.data or img.empty()) {                          // Check for invalid input
 		cout <<  "Could not open or find the image" << std::endl ;
@@ -198,6 +221,7 @@ Mat panorama(Mat &i1, Mat &i2, int info){
 			/* Muestra los emparejamientos */
 			namedWindow("Emparejamientos filtrados",1);
 			drawMatches(i1g,kp1,i2g,kp2,filtrados,i_matches);
+			resize(i_matches, i_matches, Size(600 * 2, 600));
 			imshow("Emparejamientos filtrados", i_matches);
 
 			/* Muestra los inliers
@@ -207,9 +231,74 @@ Mat panorama(Mat &i1, Mat &i2, int info){
 			waitKey(0);*/
 		}
 
-		warpPerspective(i2,result,euclid,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
-		warpPerspective(i1,result,euclid*homography,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_TRANSPARENT,0);
-		return result;
+		#if 1
+
+		//Mask of the image to be combined so you can get resulting mask
+		Mat mask1, mask2;
+		cv::threshold(i1, mask1, 0, 255, THRESH_BINARY);
+		cv::cvtColor(mask1, mask1, cv::COLOR_BGR2GRAY);
+
+		cv::threshold(i2, mask2, 0, 255, THRESH_BINARY);
+		cv::cvtColor(mask2, mask2, cv::COLOR_BGR2GRAY);
+
+		Mat i1r, i2r;
+
+		warpPerspective(i2,i2r,euclid,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_REFLECT_101,Scalar(155,155,155));
+		warpPerspective(i1,i1r,euclid*homography,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_REFLECT_101,Scalar(155,155,155));
+
+		warpPerspective(mask2,mask2,euclid,Size(max(mask2.cols-minCols,maxCols),max(mask2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
+		warpPerspective(mask1,mask1,euclid*homography,Size(max(mask2.cols-minCols,maxCols),max(mask2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
+
+//		GaussianBlur(mask1, mask1, Size(177,177), 10, 0, BORDER_DEFAULT );
+//		GaussianBlur(mask2, mask2, Size(177,177), 10, 0, BORDER_DEFAULT );
+
+//		Mat mask11, mask22;
+//		resize(i2r, mask22, Size(600, 600));
+//		resize(i1r, mask11, Size(600, 600));
+//		imshow("TEST", mask11);
+//		imshow("TEST2", mask22);
+//
+//		waitKey();
+//		destroyWindow("TEST");
+//		destroyWindow("TEST2");
+//
+//		resize(mask2, mask22, Size(600, 600));
+//		resize(mask1, mask11, Size(600, 600));
+//		imshow("TEST", mask11);
+//		imshow("TEST2", mask22);
+//
+//		waitKey();
+//		destroyWindow("TEST");
+//		destroyWindow("TEST2");
+
+		//create blender
+		detail::FeatherBlender blender(0.02);
+		//detail::MultiBandBlender blender(false, 5);
+		//feed images and the mask areas to blend
+		blender.prepare(Rect(0, 0, max(i2.cols-minCols,maxCols), max(i2.rows-minRows,maxRows)));
+
+		i1r.convertTo(i1r, CV_16SC3);
+		i2r.convertTo(i2r, CV_16SC3);
+
+		blender.feed(i1r, mask1, Point2f (0,0));
+		blender.feed(i2r, mask2, Point2f (0,0));
+		//prepare resulting size of image
+		Mat result_s, result_mask;
+		//blend
+		blender.blend(result_s, result_mask);
+
+		result_s.convertTo(result_s, (result_s.type() / 8) * 8);
+
+		return result_s;
+
+		#else
+
+			warpPerspective(i2,result,euclid,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
+			warpPerspective(i1,result,euclid*homography,Size(max(i2.cols-minCols,maxCols),max(i2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_TRANSPARENT,0);
+
+			return result;
+
+		#endif
 	}
 	else{
 		cerr << "Las imágenes no se han podido asociar" << endl;
