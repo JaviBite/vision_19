@@ -1,3 +1,5 @@
+#pragma once
+
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include <functional>
@@ -9,7 +11,6 @@
 #include "opencv2/xfeatures2d.hpp"
 
 #define CV_BGR2YCrCb COLOR_BGR2YCrCb
-#define CV_RANSAC RANSAC
 #define CV_YCrCb2BGR COLOR_YCrCb2BGR
 #define CV_RGB2GRAY COLOR_RGB2GRAY
 #define CV_BGR2GRAY COLOR_BGR2GRAY
@@ -23,6 +24,11 @@
 #define cvDestroyWindow destroyWindow
 #define CV_RETR_TREE RETR_TREE
 #define CV_CHAIN_APPROX_NONE CHAIN_APPROX_NONE
+
+#ifdef CV_RANSAC
+#else
+	#define CV_RANSAC RANSAC
+#endif
 
 using namespace cv;
 using namespace std;
@@ -65,80 +71,9 @@ void translateImg(Mat &img, int offsetx, int offsety) {
 	warpAffine(img, img, T, Size(img.cols * 3, img.rows * 3)); // 3,4 is usual
 }
 
-void warp_crops(Mat& im_1, const Mat& im_2)
-{
-	cv::Ptr<Feature2D> f2d = xfeatures2d::SURF::create();
-
-
-	// Step 1: Detect the keypoints:
-	std::vector<KeyPoint> keypoints_1, keypoints_2;
-	f2d->detect( im_1, keypoints_1 );
-	f2d->detect( im_2, keypoints_2 );
-
-	// Step 2: Calculate descriptors (feature vectors)
-	Mat descriptors_1, descriptors_2;
-	f2d->compute( im_1, keypoints_1, descriptors_1 );
-	f2d->compute( im_2, keypoints_2, descriptors_2 );
-
-	// Step 3: Matching descriptor vectors using BFMatcher :
-	FlannBasedMatcher matcher;
-	std::vector< DMatch > matches;
-	matcher.match( descriptors_1, descriptors_2, matches );
-
-	// Keep best matches only to have a nice drawing.
-	// We sort distance between descriptor matches
-	Mat index;
-	int nbMatch = int(matches.size());
-	Mat tab(nbMatch, 1, CV_32F);
-	for (int i = 0; i < nbMatch; i++)
-		tab.at<float>(i, 0) = matches[i].distance;
-	sortIdx(tab, index, SORT_EVERY_COLUMN + SORT_ASCENDING);
-	vector<DMatch> bestMatches;
-
-	for (int i = 0; i < 200; i++)
-		bestMatches.push_back(matches[index.at < int > (i, 0)]);
-
-
-	// 1st image is the destination image and the 2nd image is the src image
-	std::vector<Point2f> dst_pts;                   //1st
-	std::vector<Point2f> source_pts;                //2nd
-
-	for (vector<DMatch>::iterator it = bestMatches.begin(); it != bestMatches.end(); ++it) {
-		cout << it->queryIdx << "\t" <<  it->trainIdx << "\t"  <<  it->distance << "\n";
-		//-- Get the keypoints from the good matches
-		dst_pts.push_back( keypoints_1[ it->queryIdx ].pt );
-		source_pts.push_back( keypoints_2[ it->trainIdx ].pt );
-	}
-
-	 Mat img_matches;
-	 drawMatches( im_1, keypoints_1, im_2, keypoints_2,
-	           bestMatches, img_matches, Scalar::all(-1), Scalar::all(-1),
-	           vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-
-	 //-- Show detected matches
-	 resize(img_matches, img_matches, Size(500, 500));
-	 imshow( "Good_Matches.jpg", img_matches );
-
-
-
-	Mat H = findHomography( source_pts, dst_pts, CV_RANSAC );
-	Mat wim_2;
-	cout << "Homo = " << H << endl;
-
-	warpPerspective(im_2, wim_2, H, im_1.size());
-
-	for (int i = 0; i < im_1.cols; i++)
-		for (int j = 0; j < im_1.rows; j++) {
-			Vec3b color_im1 = im_1.at<Vec3b>(Point(i, j));
-			Vec3b color_im2 = wim_2.at<Vec3b>(Point(i, j));
-			if (norm(color_im1) == 0)
-				im_1.at<Vec3b>(Point(i, j)) = color_im2;
-
-		}
-
-}
-
-Mat panorama(Mat &i1, Mat &i2, int info){
+Mat panorama(Mat &i1, Mat &i2, bool info,
+		cv::Ptr<Feature2D> detector = xfeatures2d::SURF::create(),
+		int matcherType = DescriptorMatcher::FLANNBASED){
 	Mat i1g, i2g, d1, d2, i_matches, inliers, result;
 	cvtColor(i1,i1g,CV_BGR2GRAY);
 	cvtColor(i2,i2g,CV_BGR2GRAY);
@@ -149,26 +84,40 @@ Mat panorama(Mat &i1, Mat &i2, int info){
 
 	/* Detectar puntos de interes */
 	//SurfFeatureDetector detector(400);
-	cv::Ptr<Feature2D> detector = xfeatures2d::SURF::create();
-	detector->detect( i1g, kp1 );
-	detector->detect( i2g, kp2 );
+	detector->clear();
+	detector->detectAndCompute(i1g, cv::noArray(), kp1, d1);
+	detector->detectAndCompute(i2g, cv::noArray(), kp2, d2);
+//	detector->detect(i1g, kp1);
+//	detector->detect(i2g, kp2);
+//
+//
+//	/* Obtiene los descriptores de cada punto de interes */
+//	//Ptr<SURF> extractor = detector;
+//	//extractor->clear();
+//	detector->compute(i1g,kp1,d1);
+//	detector->compute(i2g,kp2,d2);
 
-	/* Obtiene los descriptores de cada punto de interes */
-	Ptr<SURF> extractor = SURF::create();
-	extractor->compute(i1g,kp1,d1);
-	extractor->compute(i2g,kp2,d2);
+	if(d1.type() != CV_32F)
+	    d1.convertTo(d1, CV_32F);
+
+	if(d2.type() != CV_32F)
+	    d2.convertTo(d2, CV_32F);
 
 	/* Realiza los emparejamientos, con filtro de ratio */
-	BFMatcher matcher(NORM_L2);
-	matcher.knnMatch(d1,d2,matches,2);
+	//Ptr<DescriptorMatcher> matcher =  DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_SL2);
+	Ptr<DescriptorMatcher> matcher =  DescriptorMatcher::create(matcherType);
+
+	if (!d1.empty() && !d2.empty())
+		matcher->knnMatch(d1,d2,matches,2);
 
 	for(unsigned int i = 0; i < matches.size(); i++){
-
 		/* Aplica el filtro de ratio */
 		if(matches[i][0].distance < 0.5*matches[i][1].distance){
 			filtrados.push_back(matches[i][0]);
 		}
 	}
+
+	// Good matches
 	if(filtrados.size()>10){
 
 		for(unsigned int i = 0; i < filtrados.size(); i++){
@@ -217,7 +166,7 @@ Mat panorama(Mat &i1, Mat &i2, int info){
 		euclid.at<double>(0,2) = -minCols;
 		euclid.at<double>(1,2) = -minRows;
 
-		if(info == 1){
+		if(info){
 			/* Muestra los emparejamientos */
 			namedWindow("Emparejamientos filtrados",1);
 			drawMatches(i1g,kp1,i2g,kp2,filtrados,i_matches);
