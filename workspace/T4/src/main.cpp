@@ -181,9 +181,7 @@ int main(int argc, char *argv[]) {
 
 		std::cout << "Fin" << std::endl;
 
-		destroyWindow("Imagen panorámica");
-		destroyWindow("Imagen añadida");
-		destroyWindow("Emparejamientos filtrados");
+		destroyAllWindows();
 
 		imwrite("result.jpg", im_1);
 	}
@@ -227,6 +225,7 @@ int main(int argc, char *argv[]) {
 			flip(frame,frame,1);
 			imshow("Camara",frame);
 
+			namedWindow("Panorama", 0);
 			imshow("Panorama", i1);
 
 			int wait = waitKey(20);
@@ -251,6 +250,7 @@ int main(int argc, char *argv[]) {
 		timer.join();
 
 		imwrite("panorama_camara.jpg",i1);
+		namedWindow("Panorama", 0);
 		imshow("Panorama", i1);
 		waitKey(0);
 		destroyAllWindows();
