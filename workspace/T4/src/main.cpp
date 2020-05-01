@@ -237,6 +237,8 @@ int main(int argc, char *argv[]) {
 				cout << "Imagen tomada" << endl;
 				cap >> frame;
 				flip(frame,frame,1);
+
+				//Using akaze, the fastest detector probed and FALNN, fastest matcher
 				i1 = panorama(i1,frame,2, cv::AKAZE::create(), DescriptorMatcher::FLANNBASED);
 			}
 			if(wait == 27){
