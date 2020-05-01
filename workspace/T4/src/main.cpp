@@ -26,6 +26,11 @@
 using namespace cv;
 using namespace cv::xfeatures2d;
 
+
+// HYPER PARAMS
+#define HIEGHT 720
+#define WIDTH 960
+
 void cameraTimer(bool *shotCamera) {
   Sleep(2000);
   if (!*shotCamera)
@@ -76,9 +81,6 @@ int main(int argc, char *argv[]) {
 			cin >> type;
 		}
 
-		int width = 960;
-		int height = 720;
-
 		std::vector<cv::String> files;
 		files.push_back("files/panorama/out_1.jpg");
 		files.push_back("files/panorama/out_2.jpg");
@@ -90,13 +92,13 @@ int main(int argc, char *argv[]) {
 			if ((!manual || (manual && i == type)) && !((i < 3) && matType == 2)) {
 				Mat pan = imread(files[0]);
 
-				resize(pan, pan, Size(width, height));
+				resize(pan, pan, Size(WIDTH, HIEGHT));
 
 				clock_t begin = clock();
 				for (int j = 1; j < int(files.size()); j++) {
 
 					Mat im_2 = imread(files[j]);
-					resize(im_2, im_2, Size(width, height));
+					resize(im_2, im_2, Size(WIDTH, HIEGHT));
 
 					pan = panorama(im_2, pan, 0, detectors[i], matchers[matType]);
 
@@ -127,9 +129,6 @@ int main(int argc, char *argv[]) {
 		cout << "Poster(0) o escena (1)?:  ";
 		cin >> poster;
 
-		int width = 960;
-		int height = 720;
-
 		std::list<cv::String> files;
 
 		if (poster == 1) {
@@ -150,7 +149,7 @@ int main(int argc, char *argv[]) {
 		Mat im_1 = imread(files.back());
 		files.pop_back();
 
-		resize(im_1, im_1, Size(width, height));
+		resize(im_1, im_1, Size(WIDTH, HIEGHT));
 
 		int i = 1;
 
@@ -158,7 +157,7 @@ int main(int argc, char *argv[]) {
 			i++;
 
 			Mat im_2 = imread(file);
-			resize(im_2, im_2, Size(width, height));
+			resize(im_2, im_2, Size(WIDTH, HIEGHT));
 
 			clock_t begin = clock();
 			im_1 = panorama(im_2, im_1, hom, xfeatures2d::SURF::create(), DescriptorMatcher::FLANNBASED);
@@ -267,7 +266,7 @@ int main(int argc, char *argv[]) {
 #else
 int main()
 {
-    std::cout << "This program needs the xfeatures2d contrib module to be run." << std::endl;
+    std::cout << "This program needs the xfeatures2d contrib module to run." << std::endl;
     return 0;
 }
 #endif

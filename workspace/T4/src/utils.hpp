@@ -34,6 +34,13 @@ using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
 
+
+// HYPER PARAMS
+#define FILTER_RATIO 0.5F
+#define BLENDING 1
+#define GOOD_MATCHES 20
+
+// Convert type (matrix) to string
 string type2str(int type) {
   string r;
 
@@ -57,6 +64,7 @@ string type2str(int type) {
   return r;
 }
 
+//Check if the image mat is valid
 void checkImg(Mat img) {
 	if(!img.data or img.empty()) {                          // Check for invalid input
 		cout <<  "Could not open or find the image" << std::endl ;
@@ -64,93 +72,74 @@ void checkImg(Mat img) {
 	}
 }
 
-void translateImg(Mat &img, int offsetx, int offsety) {
-	Mat T = (Mat_<double>(2, 3) << 1, 0, offsetx,
-								   0, 1, offsety);
-
-	warpAffine(img, img, T, Size(img.cols * 3, img.rows * 3)); // 3,4 is usual
-}
-
+// Join the im_1 and im_2 creating a panorama image
 Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		cv::Ptr<Feature2D> detector = xfeatures2d::SURF::create(),
 		int matcherType = DescriptorMatcher::FLANNBASED){
 	Mat im_1aux, im_2aux, inliers, result;
 
+	// Create a grayscale images from the source
 	cvtColor(im_1,im_1aux,CV_BGR2GRAY);
 	cvtColor(im_2,im_2aux,CV_BGR2GRAY);
 
+	// Variables
 	vector< KeyPoint > kp_1, kp_2;
-	Mat d1, d2;
-
+	Mat detects1, detects2;
 	vector< vector <DMatch> > matches;
-	vector < DMatch > filtrados, ransac;
+	vector < DMatch > filtrados;
 	vector< Point2f > obj, escena;
 
-	/* Detectar puntos de interes */
-	//SurfFeatureDetector detector(400);
+	// Detecting interest points ("corners")
 	detector->clear();
-	detector->detectAndCompute(im_1aux, cv::noArray(), kp_1, d1);
-	detector->detectAndCompute(im_2aux, cv::noArray(), kp_2, d2);
-//	detector->detect(im_1g, kp1);
-//	detector->detect(im_2g, kp2);
-//
-//
-//	/* Obtiene los descriptores de cada punto de interes */
-//	//Ptr<SURF> extractor = detector;
-//	//extractor->clear();
-//	detector->compute(im_1g,kp1,d1);
-//	detector->compute(im_2g,kp2,d2);
+	detector->detectAndCompute(im_1aux, cv::noArray(), kp_1, detects1);	// @suppress("Invalid arguments")
+	detector->detectAndCompute(im_2aux, cv::noArray(), kp_2, detects2);	// @suppress("Invalid arguments")
 
-	if(d1.type() != CV_32F)
-	    d1.convertTo(d1, CV_32F);
+	// Convert type for matchers like FLANN
+	if(detects1.type() != CV_32F)
+	    detects1.convertTo(detects1, CV_32F);
 
-	if(d2.type() != CV_32F)
-	    d2.convertTo(d2, CV_32F);
+	if(detects2.type() != CV_32F)
+	    detects2.convertTo(detects2, CV_32F);
 
-	/* Realiza los emparejamientos, con filtro de ratio */
-	//Ptr<DescriptorMatcher> matcher =  DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_SL2);
+	// Pair the matches and filter them with a ratio
 	Ptr<DescriptorMatcher> matcher =  DescriptorMatcher::create(matcherType);
 
-	if (!d1.empty() && !d2.empty())
-		matcher->knnMatch(d1,d2,matches,2);
+	if (!detects1.empty() && !detects2.empty())
+		matcher->knnMatch(detects1, detects2, matches, 2, cv::noArray(), false); //K = 2 //@suppress("Invalid arguments")
 
-	for(unsigned int i = 0; i < matches.size(); i++){
-		/* Aplica el filtro de ratio */
-		if(matches[i][0].distance < 0.5*matches[i][1].distance){
+	for (int i = 0; i < int(matches.size()); i++) {
+		// Filter ratio
+		if(matches[i][0].distance < FILTER_RATIO * matches[i][1].distance) {
 			filtrados.push_back(matches[i][0]);
 		}
 	}
 
 	// Good matches
-	if(filtrados.size()>10){
-
-		for(unsigned int i = 0; i < filtrados.size(); i++){
-			obj.push_back(kp_1[ filtrados[i].queryIdx ].pt);
-			escena.push_back(kp_2[ filtrados[i].trainIdx ].pt);
+	if(filtrados.size() > GOOD_MATCHES) {
+		for(unsigned int i = 0; i < filtrados.size(); i++) {
+			obj.push_back(kp_1[filtrados[i].queryIdx].pt);
+			escena.push_back(kp_2[filtrados[i].trainIdx].pt);
 		}
 
 		Mat mask;
-		Mat homography = findHomography(obj,escena,CV_RANSAC,3,mask);
 
-		// Cï¿½lculo de inliners
-		for(unsigned int i = 0; i < filtrados.size(); i++){
-			if((int)mask.at<uchar>(i,0) == 1){
-				ransac.push_back(filtrados[i]);
-			}
-		}
+		// Homograpy between obj (im_1) and scene (im_2)
+		Mat homography = findHomography(obj, escena, CV_RANSAC, 3, mask);		// @suppress("Invalid arguments")
 
+		// Corners for image translation/transformation
 		vector <Point2f> corners;
-
-		corners.push_back(Point2f(0,0));
-		corners.push_back(Point2f(0,im_1aux.rows));
-		corners.push_back(Point2f(im_1aux.cols,0));
-		corners.push_back(Point2f(im_1aux.cols,im_1aux.rows));
+		corners.push_back(Point2f(0, 0));
+		corners.push_back(Point2f(0, im_1aux.rows));
+		corners.push_back(Point2f(im_1aux.cols, 0));
+		corners.push_back(Point2f(im_1aux.cols, im_1aux.rows));
 
 		vector < Point2f > scene_corners;
-		perspectiveTransform(corners, scene_corners, homography);
+		perspectiveTransform(corners, scene_corners, homography);		// @suppress("Invalid arguments")
 
-		float maxCols(0),maxRows(0),minCols(0),minRows(0);
+		float maxCols = 0, maxRows = 0;
+		float minCols = 0, minRows = 0;
 
+		// Check the new image corners
 		for(unsigned int i = 0; i < scene_corners.size(); i++){
 			if(maxRows < scene_corners.at(i).y){
 				maxRows = scene_corners.at(i).y;
@@ -166,28 +155,26 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 			}
 		}
 
+		//New image size (panorama)
+		Size panSize = Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows));
+
+		// The transformation if the new image needs more space
 		Mat euclid = Mat::eye(3,3,homography.type());
 		euclid.at<double>(0,2) = -minCols;
 		euclid.at<double>(1,2) = -minRows;
+
 		Mat i_emparejamientos;
-		
-		if(showHomograpy){
+		if(showHomograpy) {
 			// Mostrar emparejamientos
-			namedWindow("Emparejamientos filtrados",1);
-			drawMatches(im_1aux,kp_1,im_2aux,kp_2,filtrados,i_emparejamientos);
+			namedWindow("Emparejamientos filtrados", 1);
+			drawMatches(im_1aux, kp_1, im_2aux, kp_2, filtrados, i_emparejamientos);		// @suppress("Invalid arguments")
 			resize(i_emparejamientos, i_emparejamientos, Size(600 * 2, 600));
 			imshow("Emparejamientos filtrados", i_emparejamientos);
-
-			/*// Mostrar inliners
-			namedWindow("Inliers",1);
-			drawemparejamientos(im_1aux,kp_1,im_2aux,kp_2,ransac,inliers);
-			imshow("Inliers", inliers);
-			waitKey(0);*/
 		}
 
-		#if 1
+		#if BLENDING
 
-		//Mask of the image to be combined so you can get resulting mask
+		//Mask of the image to be blend
 		Mat mask1, mask2;
 		cv::threshold(im_1, mask1, 0, 255, THRESH_BINARY);
 		cv::cvtColor(mask1, mask1, cv::COLOR_BGR2GRAY);
@@ -195,54 +182,40 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		cv::threshold(im_2, mask2, 0, 255, THRESH_BINARY);
 		cv::cvtColor(mask2, mask2, cv::COLOR_BGR2GRAY);
 
+		// Transformed images (result)
 		Mat im_1r, im_2r;
 
-		warpPerspective(im_2,im_2r,euclid,Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_REFLECT_101,Scalar(155,155,155));
-		warpPerspective(im_1,im_1r,euclid*homography,Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_REFLECT_101,Scalar(155,155,155));
+		// Transform the images
+		warpPerspective(im_1, im_1r, euclid * homography, panSize, INTER_LINEAR, BORDER_REFLECT_101);
+		warpPerspective(im_2, im_2r, euclid, panSize, INTER_LINEAR, BORDER_REFLECT_101);
 
-		warpPerspective(mask2,mask2,euclid,Size(max(mask2.cols-minCols,maxCols),max(mask2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
-		warpPerspective(mask1,mask1,euclid*homography,Size(max(mask2.cols-minCols,maxCols),max(mask2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
+		// Transform the masks for blending
+		warpPerspective(mask1, mask1, euclid * homography, panSize, INTER_LINEAR, BORDER_CONSTANT);
+		warpPerspective(mask2, mask2, euclid, panSize, INTER_LINEAR, BORDER_CONSTANT);
 
-//		GaussianBlur(mask1, mask1, Size(177,177), 10, 0, BORDER_DEFAULT );
-//		GaussianBlur(mask2, mask2, Size(177,177), 10, 0, BORDER_DEFAULT );
+		//Create blender
+		detail::FeatherBlender blender(0.02);	// Sharpness = 0.02
 
-//		Mat mask11, mask22;
-//		resize(im_2r, mask22, Size(600, 600));
-//		resize(im_1r, mask11, Size(600, 600));
-//		imshow("TEST", mask11);
-//		imshow("TEST2", mask22);
-//
-//		waitKey();
-//		destroyWindow("TEST");
-//		destroyWindow("TEST2");
-//
-//		resize(mask2, mask22, Size(600, 600));
-//		resize(mask1, mask11, Size(600, 600));
-//		imshow("TEST", mask11);
-//		imshow("TEST2", mask22);
-//
-//		waitKey();
-//		destroyWindow("TEST");
-//		destroyWindow("TEST2");
-
-		//create blender
-		detail::FeatherBlender blender(0.02);
+		// Multiband dont work, it creates artifacts
 		//detail::MultiBandBlender blender(false, 5);
-		//feed images and the mask areas to blend
-		blender.prepare(Rect(0, 0, max(im_2.cols-minCols,maxCols), max(im_2.rows-minRows,maxRows)));
+
+		// Feed images and the mask areas to blend
+		blender.prepare(Rect(0, 0, panSize.width, panSize.height));
 
 		im_1r.convertTo(im_1r, CV_16SC3);
 		im_2r.convertTo(im_2r, CV_16SC3);
 
 		blender.feed(im_1r, mask1, Point2f (0,0));
 		blender.feed(im_2r, mask2, Point2f (0,0));
-		//prepare resulting size of image
+
+		// Prepare resulting size of image
 		Mat result_s, result_mask;
-		//blend
+
+		//Blend
 		blender.blend(result_s, result_mask);
 
+		// Convert the result to something showable
 		result_s.convertTo(result_s, (result_s.type() / 8) * 8);
-
 		result = result_s;
 
 		#else
@@ -256,8 +229,9 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 
 		return result;
 	}
+	// Less than GOOD_MATCHES
 	else{
-		cerr << "Las imï¿½genes no se han podido asociar" << endl;
+		std::cerr << "No ha sido posible combinar las imágenes" << std::endl;
 		return im_2;
 	}
 }
