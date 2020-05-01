@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 					Mat im_2 = imread(files[j]);
 					resize(im_2, im_2, Size(WIDTH, HIEGHT));
 
-					pan = panorama(im_2, pan, 0, detectors[i], matchers[matType]);
+					pan = panorama(pan, im_2, 0, detectors[i], matchers[matType]);
 
 				}
 				clock_t end = clock();
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
 			resize(im_2, im_2, Size(WIDTH, HIEGHT));
 
 			clock_t begin = clock();
-			im_1 = panorama(im_2, im_1, hom, xfeatures2d::SURF::create(), DescriptorMatcher::FLANNBASED);
+			im_1 = panorama(im_1, im_2, hom, xfeatures2d::SURF::create(), DescriptorMatcher::FLANNBASED);
 			clock_t end = clock();
 
 			cout << "Tiempo de CPU para " << i << " imágenes: " <<  double(end - begin) / CLOCKS_PER_SEC << " segundos" << endl;
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 				cout << "Imagen tomada" << endl;
 				cap >> frame;
 				flip(frame,frame,1);
-				i1 = panorama(frame,i1,2, cv::AKAZE::create(), DescriptorMatcher::FLANNBASED);
+				i1 = panorama(i1,frame,2, cv::AKAZE::create(), DescriptorMatcher::FLANNBASED);
 			}
 			if(wait == 27){
 				break;

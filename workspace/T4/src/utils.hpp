@@ -72,40 +72,40 @@ void checkImg(Mat img) {
 	}
 }
 
-// Join the im_1 and im_2 creating a panorama image
-Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
+// Join the new_image and origin_image creating a panorama image
+Mat panorama(Mat &origin_image, Mat &new_image, bool showHomograpy = false,
 		cv::Ptr<Feature2D> detector = xfeatures2d::SURF::create(),
 		int matcherType = DescriptorMatcher::FLANNBASED){
-	Mat im_1aux, im_2aux, inliers, result;
+	Mat new_imageAux, origin_imageAux, inliers, result;
 
 	// Create a grayscale images from the source
-	cvtColor(im_1,im_1aux,CV_BGR2GRAY);
-	cvtColor(im_2,im_2aux,CV_BGR2GRAY);
+	cvtColor(new_image, new_imageAux,CV_BGR2GRAY);
+	cvtColor(origin_image,origin_imageAux,CV_BGR2GRAY);
 
 	// Variables
-	vector< KeyPoint > kp_1, kp_2;
-	Mat detects1, detects2;
+	vector< KeyPoint > new_img_keyp, orig_img_keyp;
+	Mat new_img_detects, orig_img_detects;
 	vector< vector <DMatch> > matches;
 	vector < DMatch > filtrados;
 	vector< Point2f > obj, escena;
 
 	// Detecting interest points ("corners")
 	detector->clear();
-	detector->detectAndCompute(im_1aux, cv::noArray(), kp_1, detects1);	// @suppress("Invalid arguments")
-	detector->detectAndCompute(im_2aux, cv::noArray(), kp_2, detects2);	// @suppress("Invalid arguments")
+	detector->detectAndCompute(new_imageAux, cv::noArray(), new_img_keyp, new_img_detects);	// @suppress("Invalid arguments")
+	detector->detectAndCompute(origin_imageAux, cv::noArray(), orig_img_keyp, orig_img_detects);	// @suppress("Invalid arguments")
 
 	// Convert type for matchers like FLANN
-	if(detects1.type() != CV_32F)
-	    detects1.convertTo(detects1, CV_32F);
+	if(new_img_detects.type() != CV_32F)
+	    new_img_detects.convertTo(new_img_detects, CV_32F);
 
-	if(detects2.type() != CV_32F)
-	    detects2.convertTo(detects2, CV_32F);
+	if(orig_img_detects.type() != CV_32F)
+	    orig_img_detects.convertTo(orig_img_detects, CV_32F);
 
 	// Pair the matches and filter them with a ratio
 	Ptr<DescriptorMatcher> matcher =  DescriptorMatcher::create(matcherType);
 
-	if (!detects1.empty() && !detects2.empty())
-		matcher->knnMatch(detects1, detects2, matches, 2, cv::noArray(), false); //K = 2 //@suppress("Invalid arguments")
+	if (!new_img_detects.empty() && !orig_img_detects.empty())
+		matcher->knnMatch(new_img_detects, orig_img_detects, matches, 2, cv::noArray(), false); //K = 2 //@suppress("Invalid arguments")
 
 	for (int i = 0; i < int(matches.size()); i++) {
 		// Filter ratio
@@ -117,21 +117,21 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 	// Good matches
 	if(filtrados.size() > GOOD_MATCHES) {
 		for(unsigned int i = 0; i < filtrados.size(); i++) {
-			obj.push_back(kp_1[filtrados[i].queryIdx].pt);
-			escena.push_back(kp_2[filtrados[i].trainIdx].pt);
+			obj.push_back(new_img_keyp[filtrados[i].queryIdx].pt);
+			escena.push_back(orig_img_keyp[filtrados[i].trainIdx].pt);
 		}
 
 		Mat mask;
 
-		// Homograpy between obj (im_1) and scene (im_2)
+		// Homograpy between obj (new_image) and scene (origin_image)
 		Mat homography = findHomography(obj, escena, CV_RANSAC, 3, mask);		// @suppress("Invalid arguments")
 
 		// Corners for image translation/transformation
 		vector <Point2f> corners;
 		corners.push_back(Point2f(0, 0));
-		corners.push_back(Point2f(0, im_1aux.rows));
-		corners.push_back(Point2f(im_1aux.cols, 0));
-		corners.push_back(Point2f(im_1aux.cols, im_1aux.rows));
+		corners.push_back(Point2f(0, new_imageAux.rows));
+		corners.push_back(Point2f(new_imageAux.cols, 0));
+		corners.push_back(Point2f(new_imageAux.cols, new_imageAux.rows));
 
 		vector < Point2f > scene_corners;
 		perspectiveTransform(corners, scene_corners, homography);		// @suppress("Invalid arguments")
@@ -156,10 +156,10 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		}
 
 		//New image size (panorama)
-		Size panSize = Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows));
+		Size panSize = Size(max(origin_image.cols-minCols, maxCols), max(origin_image.rows-minRows, maxRows));
 
 		// The transformation if the new image needs more space
-		Mat euclid = Mat::eye(3,3,homography.type());
+		Mat euclid = Mat::eye(3, 3, homography.type());
 		euclid.at<double>(0,2) = -minCols;
 		euclid.at<double>(1,2) = -minRows;
 
@@ -167,7 +167,7 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		if(showHomograpy) {
 			// Mostrar emparejamientos
 			namedWindow("Emparejamientos filtrados", 1);
-			drawMatches(im_1aux, kp_1, im_2aux, kp_2, filtrados, i_emparejamientos);		// @suppress("Invalid arguments")
+			drawMatches(new_imageAux, new_img_keyp, origin_imageAux, orig_img_keyp, filtrados, i_emparejamientos);		// @suppress("Invalid arguments")
 			resize(i_emparejamientos, i_emparejamientos, Size(600 * 2, 600));
 			imshow("Emparejamientos filtrados", i_emparejamientos);
 		}
@@ -175,23 +175,23 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		#if BLENDING
 
 		//Mask of the image to be blend
-		Mat mask1, mask2;
-		cv::threshold(im_1, mask1, 0, 255, THRESH_BINARY);
-		cv::cvtColor(mask1, mask1, cv::COLOR_BGR2GRAY);
+		Mat mask_new, mask_orig;
+		cv::threshold(new_image, mask_new, 0, 255, THRESH_BINARY);
+		cv::cvtColor(mask_new, mask_new, cv::COLOR_BGR2GRAY);
 
-		cv::threshold(im_2, mask2, 0, 255, THRESH_BINARY);
-		cv::cvtColor(mask2, mask2, cv::COLOR_BGR2GRAY);
+		cv::threshold(origin_image, mask_orig, 0, 255, THRESH_BINARY);
+		cv::cvtColor(mask_orig, mask_orig, cv::COLOR_BGR2GRAY);
 
 		// Transformed images (result)
-		Mat im_1r, im_2r;
+		Mat new_imageR, origin_imageR;
 
 		// Transform the images
-		warpPerspective(im_1, im_1r, euclid * homography, panSize, INTER_LINEAR, BORDER_REFLECT_101);
-		warpPerspective(im_2, im_2r, euclid, panSize, INTER_LINEAR, BORDER_REFLECT_101);
+		warpPerspective(new_image, new_imageR, euclid * homography, panSize, INTER_LINEAR, BORDER_REFLECT_101);
+		warpPerspective(origin_image, origin_imageR, euclid, panSize, INTER_LINEAR, BORDER_REFLECT_101);
 
 		// Transform the masks for blending
-		warpPerspective(mask1, mask1, euclid * homography, panSize, INTER_LINEAR, BORDER_CONSTANT);
-		warpPerspective(mask2, mask2, euclid, panSize, INTER_LINEAR, BORDER_CONSTANT);
+		warpPerspective(mask_new, mask_new, euclid * homography, panSize, INTER_LINEAR, BORDER_CONSTANT);
+		warpPerspective(mask_orig, mask_orig, euclid, panSize, INTER_LINEAR, BORDER_CONSTANT);
 
 		//Create blender
 		detail::FeatherBlender blender(0.02);	// Sharpness = 0.02
@@ -202,11 +202,11 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 		// Feed images and the mask areas to blend
 		blender.prepare(Rect(0, 0, panSize.width, panSize.height));
 
-		im_1r.convertTo(im_1r, CV_16SC3);
-		im_2r.convertTo(im_2r, CV_16SC3);
+		new_imageR.convertTo(new_imageR, CV_16SC3);
+		origin_imageR.convertTo(origin_imageR, CV_16SC3);
 
-		blender.feed(im_1r, mask1, Point2f (0,0));
-		blender.feed(im_2r, mask2, Point2f (0,0));
+		blender.feed(new_imageR, mask_new, Point2f (0,0));
+		blender.feed(origin_imageR, mask_orig, Point2f (0,0));
 
 		// Prepare resulting size of image
 		Mat result_s, result_mask;
@@ -220,8 +220,8 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 
 		#else
 
-			warpPerspective(im_2,result,euclid,Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
-			warpPerspective(im_1,result,euclid*homography,Size(max(im_2.cols-minCols,maxCols),max(im_2.rows-minRows,maxRows)),INTER_LINEAR,BORDER_TRANSPARENT,0);
+			warpPerspective(origin_image,result,euclid,Size(max(origin_image.cols-minCols,maxCols),max(origin_image.rows-minRows,maxRows)),INTER_LINEAR,BORDER_CONSTANT,0);
+			warpPerspective(new_image,result,euclid*homography,Size(max(origin_image.cols-minCols,maxCols),max(origin_image.rows-minRows,maxRows)),INTER_LINEAR,BORDER_TRANSPARENT,0);
 
 
 
@@ -232,6 +232,6 @@ Mat panorama(Mat &im_1, Mat &im_2, bool showHomograpy = false,
 	// Less than GOOD_MATCHES
 	else{
 		std::cerr << "No ha sido posible combinar las imágenes" << std::endl;
-		return im_2;
+		return origin_image;
 	}
 }
