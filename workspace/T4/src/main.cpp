@@ -30,11 +30,13 @@ using namespace cv::xfeatures2d;
 // HYPER PARAMS
 #define HIEGHT 720
 #define WIDTH 960
+#define LIVE_SHOT_TIME 1000
 
-void cameraTimer(bool *shotCamera) {
-  Sleep(2000);
-  if (!*shotCamera)
-	  *shotCamera = true;
+void cameraTimer(bool *shotCamera, bool *end) {
+	while (!*end) {
+		delay(LIVE_SHOT_TIME);
+		*shotCamera = true;
+	}
 }
 
 
@@ -100,7 +102,7 @@ int main(int argc, char *argv[]) {
 					Mat im_2 = imread(files[j]);
 					resize(im_2, im_2, Size(WIDTH, HIEGHT));
 
-					pan = panorama(pan, im_2, 0, detectors[i], matchers[matType]);
+					pan = panorama(pan, im_2, false, detectors[i], matchers[matType]);
 
 				}
 				clock_t end = clock();
@@ -182,7 +184,7 @@ int main(int argc, char *argv[]) {
 
 		destroyAllWindows();
 
-		imwrite("result.jpg", im_1);
+		imwrite("files/out/result.jpg", im_1);
 	}
 	else if(strcmp(argv[1], "3") == 0) {
 
@@ -190,12 +192,14 @@ int main(int argc, char *argv[]) {
 		cout << "En vivo o manual (tecla para capturar)? (1 -> vivo/ 0 -> manual): ";
 		cin >> manual;
 
-		Mat i1,frame;
+		Mat i1,frame, showframe;
 		namedWindow("Camara",1);
 
 		VideoCapture cap(0);
 
 		cout << "Presionar INTRO para capturar la primera imagen" << endl;
+
+		//namedWindow("Panorama", 1);
 
 		while(true){
 			cap >> frame;
@@ -209,50 +213,68 @@ int main(int argc, char *argv[]) {
 		cap >> i1;
 		flip(i1,i1,1);
 
-		cout << "Presionar INTRO para capturar imagen" << endl;
+		if (manual == 0)
+			cout << "Presionar INTRO para capturar imagen" << endl;
 		cout << "Presionar ESCAPE para terminar" << endl;
 
-		bool *shot;
+		bool *shot = new bool;
+		bool *end = new bool;
 		*shot = false;
+		*end = false;
 
-		std::thread timer(cameraTimer,shot);
-		if (manual == 1) {
-		}
+		std::thread timer;
+		if (manual == 1)
+			timer = std::thread(cameraTimer, shot, end);
 
-		while(true){
+		while(!*end) {
 			cap >> frame;
 			flip(frame,frame,1);
 			imshow("Camara",frame);
 
-			namedWindow("Panorama", 0);
-			imshow("Panorama", i1);
+			namedWindow("Panorama", 1);
+
+			resize(i1, showframe, Size(WIDTH, HIEGHT));
+			imshow("Panorama", showframe);
+			//imshow("Panorama", i1);
 
 			int wait = waitKey(20);
 
-
+			// AUTO or ENTER
 			if(wait == 13 && manual == 0){
-
+				*shot = true;
 			}
-			else if (manual == 1 && shot){
+			// ESC
+			else if(wait == 27) {
+				*end = true;
+				*shot = false;
+			}
+
+			if(*shot) {
 				cout << "Imagen tomada" << endl;
 				cap >> frame;
 				flip(frame,frame,1);
+				*shot = false;
 
 				//Using akaze, the fastest detector probed and FALNN, fastest matcher
-				i1 = panorama(i1,frame,2, cv::AKAZE::create(), DescriptorMatcher::FLANNBASED);
+				i1 = panorama(i1, frame, false, cv::AKAZE::create(), DescriptorMatcher::FLANNBASED);
 			}
-			if(wait == 27){
-				break;
-			}
+
+
 		}
-		destroyAllWindows();
+
+		if (manual == 1)
+			timer.join();
+
+		destroyWindow("Camara");
 		cap.release();
 
-		timer.join();
+		imwrite("files/out/panorama_camara.jpg", i1);
+		namedWindow("Panorama", 1);
 
-		imwrite("panorama_camara.jpg",i1);
-		namedWindow("Panorama", 0);
-		imshow("Panorama", i1);
+		resize(i1, showframe, Size(WIDTH, HIEGHT));
+		imshow("Panorama", showframe);
+		//imshow("Panorama",i1);
+
 		waitKey(0);
 		destroyAllWindows();
 
