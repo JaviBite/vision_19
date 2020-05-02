@@ -96,7 +96,7 @@ void checkImg(Mat img) {
 // Join the new_image and origin_image creating a panorama image
 Mat panorama(Mat &origin_image, Mat &new_image, bool showHomograpy = false,
 		cv::Ptr<Feature2D> detector = xfeatures2d::SURF::create(),
-		int matcherType = DescriptorMatcher::FLANNBASED){
+		cv::DescriptorMatcher::MatcherType matcherType = DescriptorMatcher::FLANNBASED){
 	Mat new_imageAux, origin_imageAux, inliers, result;
 
 	// Create a grayscale images from the source

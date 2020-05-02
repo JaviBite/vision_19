@@ -41,7 +41,10 @@ void cameraTimer(bool *shotCamera, bool *end) {
 
 
 void help() {
-	std::cout << "Usage: " << "program " << "<params>" << std::endl;
+	std::cout << "Usage: " << "program " << "<1|2|3>" << std::endl;
+	std::cout << "\t1: Comparativa de detectores" << std::endl;
+	std::cout << "\t2: Creación de panoramas a partir de imágenes" << std::endl;
+	std::cout << "\t3: Creación de panoramas a partir de la webcam" << std::endl;
 	exit(-1);
 }
 
@@ -54,7 +57,7 @@ int main(int argc, char *argv[]) {
 		cin >> manual;
 
 		const int N_MATCHERS = 2;
-		int matchers[N_MATCHERS];
+		cv::DescriptorMatcher::MatcherType matchers[N_MATCHERS];
 		cv::String matNames[N_MATCHERS];
 		matchers[0] = DescriptorMatcher::BRUTEFORCE_SL2;								matNames[0] = "BRUTE_FORCE_L2";
 		matchers[1] = DescriptorMatcher::FLANNBASED;									matNames[1] = "FLANN";
@@ -184,7 +187,7 @@ int main(int argc, char *argv[]) {
 
 		destroyAllWindows();
 
-		imwrite("files/out/result.jpg", im_1);
+		imwrite("files/outs/result.jpg", im_1);
 	}
 	else if(strcmp(argv[1], "3") == 0) {
 
