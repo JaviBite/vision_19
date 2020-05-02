@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 		detectors[0] = xfeatures2d::SURF::create();											detecNames[0] = "SURF";
 		detectors[1] = xfeatures2d::SIFT::create();											detecNames[1] = "SIFT";
 		detectors[2] = cv::AKAZE::create();													detecNames[2] = "AKAZE";
-		detectors[3] = cv::ORB::create(1000, 1.2f, 8, 51, 0, 2, ORB::FAST_SCORE, 51, 20);	detecNames[3] = "ORB";
+		detectors[3] = cv::BRISK::create();													detecNames[3] = "BRISK";
 
 		if (manual == 1) {
 			cout << "Seleccionar detector:" << std::endl;
